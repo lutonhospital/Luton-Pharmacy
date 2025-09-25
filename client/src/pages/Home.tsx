@@ -355,12 +355,6 @@ const shopCategories = [
     name: "Bundle Offers",
     icon: "📦",
     link: "/shop?category=bundle-offers"
-  },
-  {
-    id: 9,
-    name: "Veterinary Products",
-    icon: "🐕",
-    link: "/shop?category=veterinary"
   }
 ];
 
