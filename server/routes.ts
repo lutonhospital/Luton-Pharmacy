@@ -5,7 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendPrescriptionStatusEmail, sendOrderConfirmationEmail } from "./emailService";
 import Stripe from "stripe";
 import { z } from "zod";
-import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema } from "@shared/schema";
+import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema } from "@shared/schema";
 
 // Use testing Stripe key if available, otherwise use production key
 const stripeSecretKey = process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
@@ -211,6 +211,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating prescription upload status:", error);
       res.status(500).json({ message: "Failed to update prescription upload status" });
+    }
+  });
+
+  // Consultation routes
+  app.get('/api/consultations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      let consultations;
+      if (user?.role === 'pharmacist' || user?.role === 'admin') {
+        // Staff can see all pending consultations
+        consultations = await storage.getPendingConsultations();
+      } else {
+        // Patients can only see their own consultations
+        consultations = await storage.getConsultations(userId);
+      }
+      
+      res.json(consultations);
+    } catch (error) {
+      console.error("Error fetching consultations:", error);
+      res.status(500).json({ message: "Failed to fetch consultations" });
+    }
+  });
+
+  app.post('/api/consultations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Validate request body using shared schema
+      const validationResult = insertConsultationSchema.safeParse({
+        patientId: userId,
+        type: req.body.type,
+        scheduledDate: req.body.scheduledDate,
+        duration: req.body.duration || 30,
+        notes: req.body.notes || null,
+        status: "scheduled"
+      });
+
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request data",
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const consultation = await storage.createConsultation(validationResult.data);
+      
+      res.json(consultation);
+    } catch (error) {
+      console.error("Error creating consultation:", error);
+      res.status(500).json({ message: "Failed to create consultation" });
+    }
+  });
+
+  app.patch('/api/consultations/:id/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'pharmacist' && user?.role !== 'admin') {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      const { status, notes } = req.body;
+      
+      const consultation = await storage.updateConsultationStatus(id, status, notes);
+      
+      res.json(consultation);
+    } catch (error) {
+      console.error("Error updating consultation status:", error);
+      res.status(500).json({ message: "Failed to update consultation status" });
     }
   });
 

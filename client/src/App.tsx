@@ -12,6 +12,7 @@ import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import News from "@/pages/News";
 import PrescriptionUpload from "@/pages/PrescriptionUpload";
+import Consultation from "@/pages/Consultation";
 import AdminProducts from "@/pages/AdminProducts";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/contact" component={Contact} />
           <Route path="/news" component={News} />
           <Route path="/prescription-upload" component={PrescriptionUpload} />
+          <Route path="/consultation" component={Consultation} />
           <Route path="/landing" component={Landing} />
           {isAuthenticated && (
             <>
