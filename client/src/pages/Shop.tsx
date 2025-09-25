@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ShoppingCart, Plus, Minus, Upload, Calendar, Filter, Grid, List } from "lucide-react";
+import { Search, ShoppingCart, Plus, Minus, Upload, Calendar, Filter, Grid, List, Star } from "lucide-react";
 import Navigation from "@/components/Navigation";
 
 interface Product {
@@ -23,6 +23,7 @@ interface Product {
   originalPrice?: string;
   currentStock: number;
   requiresPrescription: boolean;
+  rating?: number;
 }
 
 interface CartItem {
@@ -339,6 +340,13 @@ export default function Shop() {
                                   Prescription Required
                                 </Badge>
                               )}
+                              {/* Star Rating */}
+                              <div className="flex items-center mt-2" data-testid={`rating-${product.id}`}>
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span className="text-sm text-muted-foreground ml-1" aria-label={`Rating: ${product.rating || 4.5} out of 5 stars`}>
+                                  {product.rating || 4.5}
+                                </span>
+                              </div>
                             </div>
                             <div className="flex items-center justify-between">
                               <div>
@@ -385,6 +393,13 @@ export default function Shop() {
                                       Prescription Required
                                     </Badge>
                                   )}
+                                </div>
+                                {/* Star Rating */}
+                                <div className="flex items-center mt-2" data-testid={`rating-${product.id}`}>
+                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                  <span className="text-sm text-muted-foreground ml-1" aria-label={`Rating: ${product.rating || 4.5} out of 5 stars`}>
+                                    {product.rating || 4.5}
+                                  </span>
                                 </div>
                               </div>
                               <div className="text-right">
