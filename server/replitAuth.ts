@@ -56,13 +56,25 @@ function updateUserSession(
 
 async function upsertUser(
   claims: any,
-) {
-  await storage.upsertUser({
+): Promise<any> {
+  if (!claims.sub) {
+    throw new Error("Authentication failed: missing user ID in claims");
+  }
+
+  // Check if user already exists to preserve role
+  const existingUser = await storage.getUser(claims.sub);
+  
+  const dbUser = await storage.upsertAuthUser({
+    id: claims.sub,
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
+    // Only set role for new users, preserve existing role for returning users
+    role: existingUser?.role || "patient",
   });
+  
+  return dbUser;
 }
 
 export async function setupAuth(app: Express) {
@@ -77,10 +89,23 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
+    try {
+      const user: any = {};
+      updateUserSession(user, tokens);
+      const claims = tokens.claims();
+      
+      if (!claims?.sub) {
+        return verified(new Error("Authentication failed: missing user ID in claims"));
+      }
+      
+      // Get the actual database user to ensure session ID matches DB
+      const dbUser = await upsertUser(claims);
+      user.id = dbUser.id; // Use database user ID for session consistency
+      verified(null, user);
+    } catch (error) {
+      console.error("Authentication verification failed:", error);
+      verified(error);
+    }
   };
 
   for (const domain of process.env

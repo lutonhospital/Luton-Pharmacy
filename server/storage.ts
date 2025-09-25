@@ -8,6 +8,7 @@ import {
   notifications,
   type User,
   type UpsertUser,
+  type AuthUpsertUser,
   type Address,
   type InsertAddress,
   type Prescription,
@@ -28,6 +29,7 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  upsertAuthUser(user: AuthUpsertUser): Promise<User>;
   updateUserStripeInfo(userId: string, customerId: string, subscriptionId?: string): Promise<User>;
 
   // Address operations
@@ -79,6 +81,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  async upsertAuthUser(userData: AuthUpsertUser): Promise<User> {
+    // Check if user exists by email first (for migration cases)
+    if (userData.email) {
+      const [existingUserByEmail] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, userData.email));
+        
+      if (existingUserByEmail) {
+        // Update existing user without changing ID
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            profileImageUrl: userData.profileImageUrl,
+            // Preserve existing role - don't overwrite from OIDC
+            updatedAt: new Date(),
+          })
+          .where(eq(users.email, userData.email))
+          .returning();
+        return updatedUser;
+      }
+    }
+    
+    // If no existing user by email, try normal upsert by ID
     const [user] = await db
       .insert(users)
       .values(userData)

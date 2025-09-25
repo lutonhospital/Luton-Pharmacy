@@ -217,6 +217,12 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
+// Auth-specific schema that includes ID for OIDC user creation
+export const authUpsertUserSchema = createInsertSchema(users).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertAddressSchema = createInsertSchema(addresses).omit({
   id: true,
   createdAt: true,
@@ -250,6 +256,7 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
+export type AuthUpsertUser = z.infer<typeof authUpsertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Address = typeof addresses.$inferSelect;
