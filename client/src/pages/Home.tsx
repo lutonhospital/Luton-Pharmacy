@@ -485,35 +485,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Header with Cart Review */}
-      <div className="bg-white border-b border-gray-200 py-4">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Review Your Order</h2>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">0 items</span>
-              <div className="text-sm text-gray-500">Your cart is empty</div>
-            </div>
-          </div>
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm">
-              <span className="text-gray-600">Subtotal: </span>
-              <span className="font-semibold">Kes 0</span>
-            </div>
-            <div className="text-sm">
-              <span className="text-gray-600">Order Amount: </span>
-              <span className="font-semibold">Kes 0</span>
-            </div>
-          </div>
-          <div className="mt-4 flex space-x-4">
-            <Link href="/shop">
-              <Button variant="outline" size="sm" data-testid="button-continue-shopping">
-                Continue Shopping
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
 
       {/* Category Navigation */}
       <section className="bg-white py-6">

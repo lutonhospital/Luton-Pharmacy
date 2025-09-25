@@ -2,13 +2,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-  Hospital, 
   MapPin, 
   Search, 
   User as UserIcon, 
   Heart, 
   ShoppingCart,
-  Scale,
+  Upload,
   ChevronDown,
   Phone,
   Mail,
@@ -17,6 +16,7 @@ import {
   Instagram,
   Linkedin
 } from "lucide-react";
+import logoPath from "@assets/Logo_1758790009017.png";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   DropdownMenu, 
@@ -58,7 +58,7 @@ export default function Navigation({ user }: NavigationProps) {
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
-                <span>info@lutonhospitalpharmacy.co.ke</span>
+                <span>info@lutonhospital.co.ke</span>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -90,7 +90,7 @@ export default function Navigation({ user }: NavigationProps) {
             <div className="flex items-center space-x-6">
               <Link href="/">
                 <div className="flex items-center space-x-2 cursor-pointer">
-                  <Hospital className="text-primary text-2xl" />
+                  <img src={logoPath} alt="Luton Hospital Logo" className="h-12 w-auto" />
                   <div>
                     <h1 className="text-xl font-bold text-gray-900">Luton Hospital</h1>
                     <p className="text-sm text-gray-600">Online Pharmacy</p>
@@ -144,10 +144,11 @@ export default function Navigation({ user }: NavigationProps) {
 
             {/* Navigation Icons */}
             <div className="flex items-center space-x-6">
-              {/* Supplements Link */}
-              <Link href="/shop?category=supplements">
-                <Button variant="ghost" className="text-sm font-medium text-gray-700 hover:text-primary" data-testid="nav-supplements">
-                  Supplements
+              {/* Upload Prescription */}
+              <Link href="/upload-prescription">
+                <Button variant="ghost" className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-primary" data-testid="nav-upload-prescription">
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Prescription</span>
                 </Button>
               </Link>
 
@@ -202,17 +203,6 @@ export default function Navigation({ user }: NavigationProps) {
                   </div>
                 </Button>
               )}
-
-              {/* Compare */}
-              <Button variant="ghost" className="relative" data-testid="button-compare">
-                <Scale className="h-6 w-6 text-gray-600 hover:text-primary" />
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  0
-                </span>
-                <div className="hidden lg:block ml-2">
-                  <p className="text-sm font-medium text-gray-700">Compare</p>
-                </div>
-              </Button>
 
               {/* Wishlist */}
               <Button variant="ghost" className="relative" data-testid="button-wishlist">
