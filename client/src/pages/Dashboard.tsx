@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import Navigation from "@/components/Navigation";
 import PatientDashboard from "@/components/PatientDashboard";
 import StaffDashboard from "@/components/StaffDashboard";
 
@@ -39,7 +38,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation user={user} />
       {isStaff ? <StaffDashboard user={user!} /> : <PatientDashboard user={user!} />}
     </div>
   );

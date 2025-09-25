@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, ShoppingCart, Plus, Minus, Upload, Calendar, Filter, Grid, List, Star } from "lucide-react";
-import Navigation from "@/components/Navigation";
+import { Link } from "wouter";
 
 interface Product {
   id: string;
@@ -163,8 +163,6 @@ export default function Shop() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation user={user} />
-
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-primary/10 to-secondary/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -178,22 +176,26 @@ export default function Shop() {
             
             {/* Quick Actions */}
             <div className="flex flex-wrap justify-center gap-4 mb-8">
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                data-testid="button-upload-prescription"
-              >
-                <Upload className="h-4 w-4" />
-                Upload Prescription
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                data-testid="button-book-consultation"
-              >
-                <Calendar className="h-4 w-4" />
-                Book Consultation
-              </Button>
+              <Link href="/prescription-upload">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                  data-testid="button-upload-prescription"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Prescription
+                </Button>
+              </Link>
+              <Link href="/consultation">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                  data-testid="button-book-consultation"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Book Consultation
+                </Button>
+              </Link>
               {user && (
                 <Button 
                   variant="outline" 
@@ -310,7 +312,7 @@ export default function Shop() {
                 </div>
 
                 <div className={viewMode === "grid" ? 
-                  "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" : 
+                  "grid grid-cols-2 lg:grid-cols-4 gap-6" : 
                   "space-y-4"
                 }>
                   {products?.map((product) => (

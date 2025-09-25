@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Calendar, User, ArrowRight } from "lucide-react";
-import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 // Sample news articles data - in a real app, this would come from an API
@@ -120,8 +119,6 @@ export default function News() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation user={user} />
-
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-primary/10 to-secondary/10 py-16">
         <div className="container mx-auto px-4">

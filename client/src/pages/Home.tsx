@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -110,21 +111,6 @@ const promotionalBanners = [
   }
 ];
 
-// Top brands data
-const topBrands = [
-  { id: 1, name: "Pfizer" },
-  { id: 2, name: "Johnson & Johnson" },
-  { id: 3, name: "Novartis" },
-  { id: 4, name: "Roche" },
-  { id: 5, name: "GSK" },
-  { id: 6, name: "Merck" },
-  { id: 7, name: "AstraZeneca" },
-  { id: 8, name: "Sanofi" },
-  { id: 9, name: "Bristol Myers" },
-  { id: 10, name: "Abbott" },
-  { id: 11, name: "Bayer" },
-  { id: 12, name: "Boehringer" }
-];
 
 // Trending products data
 const trendingProducts = [
@@ -358,6 +344,21 @@ const shopCategories = [
   }
 ];
 
+// Product interface for API data
+interface Product {
+  id: string;
+  medicationName: string;
+  dosage: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  unitPrice: string;
+  originalPrice?: string;
+  currentStock: number;
+  requiresPrescription: boolean;
+  rating?: number;
+}
+
 // Helper function to create safe data-testids
 const slugify = (text: string): string => {
   return text
@@ -370,6 +371,17 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentBanner, setCurrentBanner] = useState(0);
+
+  // Fetch 6 random products for Featured Medicines section
+  const { data: featuredMedicines, isLoading: medicinesLoading } = useQuery<Product[]>({
+    queryKey: ["/api/products", { limit: 6, random: true }],
+    queryFn: async () => {
+      const response = await fetch("/api/products?limit=6&random=true");
+      if (!response.ok) throw new Error("Failed to fetch featured medicines");
+      return response.json();
+    },
+    enabled: true,
+  });
 
   // Auto-slide functionality for hero slider
   useEffect(() => {
@@ -547,19 +559,78 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Our Top Brands */}
+      {/* Featured Medicines */}
       <section className="bg-white py-8">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Our Top Brands</h2>
-          <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-4">
-            {topBrands.map((brand) => (
-              <div key={brand.id} className="bg-gray-50 p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer" data-testid={`brand-${slugify(brand.name)}`}>
-                <div className="text-center text-xs font-medium text-gray-700">
-                  {brand.name}
-                </div>
-              </div>
-            ))}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Featured Medicines</h2>
+            <Link href="/shop">
+              <Button variant="outline" data-testid="button-view-all-featured">
+                View All
+              </Button>
+            </Link>
           </div>
+          {medicinesLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="animate-pulse">
+                  <div className="bg-gray-200 h-32 rounded-lg mb-3"></div>
+                  <div className="bg-gray-200 h-4 rounded mb-2"></div>
+                  <div className="bg-gray-200 h-4 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          ) : featuredMedicines && featuredMedicines.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {featuredMedicines.map((product) => (
+                <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow" data-testid={`card-featured-${slugify(product.medicationName)}`}>
+                  <CardContent className="p-4">
+                    <div className="text-center mb-3">
+                      <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                        <span className="text-2xl">💊</span>
+                      </div>
+                      <h3 className="text-sm font-medium text-gray-800 mb-2 line-clamp-2">{product.medicationName}</h3>
+                      <p className="text-xs text-gray-500 mb-2">{product.dosage}</p>
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="flex items-center">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star 
+                              key={star} 
+                              className={`h-3 w-3 ${star <= (product.rating || 4) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-500 ml-1">({product.rating || 4})</span>
+                      </div>
+                      <div className="flex items-center justify-center space-x-2 mb-3">
+                        <span className="text-lg font-bold text-primary">KES {product.unitPrice}</span>
+                        {product.originalPrice && (
+                          <span className="text-sm text-gray-500 line-through">KES {product.originalPrice}</span>
+                        )}
+                      </div>
+                      {product.requiresPrescription && (
+                        <Badge variant="outline" className="text-xs mb-2">
+                          Prescription Required
+                        </Badge>
+                      )}
+                    </div>
+                    <Button 
+                      size="sm" 
+                      className="w-full bg-primary hover:bg-primary/90 text-xs"
+                      data-testid={`button-add-to-cart-${product.id}`}
+                    >
+                      <ShoppingCart className="h-3 w-3 mr-1" />
+                      Add to Cart
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No featured medicines available at the moment.</p>
+            </div>
+          )}
         </div>
       </section>
 

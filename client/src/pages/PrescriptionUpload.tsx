@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertPrescriptionUploadSchema, type PrescriptionUpload } from "@shared/schema";
-import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -165,7 +164,6 @@ export default function PrescriptionUpload() {
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation user={user} />
         <div className="container mx-auto px-4 py-16 text-center">
           <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Login Required</h1>
@@ -180,8 +178,6 @@ export default function PrescriptionUpload() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation user={user} />
-      
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-primary/10 to-secondary/10 py-12">
         <div className="container mx-auto px-4">
