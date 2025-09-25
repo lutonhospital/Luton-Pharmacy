@@ -72,6 +72,11 @@ export interface IStorage {
   getInventoryItem(medicationName: string, dosage: string): Promise<Inventory | undefined>;
   updateInventoryStock(id: string, newStock: number): Promise<Inventory>;
   getLowStockItems(): Promise<Inventory[]>;
+  // Admin inventory management
+  getAllInventory(): Promise<Inventory[]>;
+  createInventoryItem(data: InsertInventory): Promise<Inventory>;
+  updateInventoryItem(id: string, data: Partial<InsertInventory>): Promise<Inventory>;
+  deleteInventoryItem(id: string): Promise<void>;
 
   // Notification operations
   getUserNotifications(userId: string): Promise<Notification[]>;
@@ -403,6 +408,40 @@ export class DatabaseStorage implements IStorage {
       .from(inventory)
       .where(sql`current_stock <= minimum_stock`)
       .orderBy(asc(inventory.currentStock));
+  }
+
+  // Admin inventory management
+  async getAllInventory(): Promise<Inventory[]> {
+    return await db
+      .select()
+      .from(inventory)
+      .orderBy(asc(inventory.medicationName));
+  }
+
+  async createInventoryItem(data: InsertInventory): Promise<Inventory> {
+    const [newItem] = await db
+      .insert(inventory)
+      .values(data)
+      .returning();
+    return newItem;
+  }
+
+  async updateInventoryItem(id: string, data: Partial<InsertInventory>): Promise<Inventory> {
+    const [updatedItem] = await db
+      .update(inventory)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(inventory.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteInventoryItem(id: string): Promise<void> {
+    await db
+      .delete(inventory)
+      .where(eq(inventory.id, id));
   }
 
   // Notification operations

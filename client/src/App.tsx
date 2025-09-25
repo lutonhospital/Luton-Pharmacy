@@ -10,6 +10,7 @@ import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
+import AdminProducts from "@/pages/AdminProducts";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Payment from "@/pages/Payment";
@@ -32,6 +33,9 @@ function Router() {
             <>
               <Route path="/dashboard" component={Dashboard} />
               <Route path="/payment/:orderId" component={Payment} />
+              {(user?.role === 'admin' || user?.role === 'pharmacist') && (
+                <Route path="/admin/products" component={AdminProducts} />
+              )}
             </>
           )}
           <Route component={NotFound} />

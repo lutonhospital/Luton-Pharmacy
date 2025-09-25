@@ -5,7 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendPrescriptionStatusEmail, sendOrderConfirmationEmail } from "./emailService";
 import Stripe from "stripe";
 import { z } from "zod";
-import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema } from "@shared/schema";
+import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema } from "@shared/schema";
 
 // Use testing Stripe key if available, otherwise use production key
 const stripeSecretKey = process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
@@ -23,6 +23,20 @@ if (!stripeSecretKey) {
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2024-06-20",
 });
+
+// Centralized KES payment helper to ensure currency consistency
+const createKesPaymentIntent = async (amountKes: number, orderId: string) => {
+  const amountInCents = Math.round(amountKes * 100);
+  console.log(`Creating KES payment intent: KES ${amountKes} -> ${amountInCents} cents`);
+  
+  return await stripe.paymentIntents.create({
+    amount: amountInCents,
+    currency: "kes",
+    metadata: {
+      orderId,
+    },
+  });
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -326,16 +340,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      // Convert KES to cents (smallest currency unit)
-      const amountInCents = Math.round(parseFloat(order.totalAmount) * 100);
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amountInCents,
-        currency: "kes",
-        metadata: {
-          orderId: order.id,
-        },
-      });
+      // Use centralized KES payment helper
+      const paymentIntent = await createKesPaymentIntent(
+        parseFloat(order.totalAmount),
+        order.id
+      );
 
       res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error: any) {
@@ -483,6 +492,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing from cart:", error);
       res.status(500).json({ message: "Failed to remove from cart" });
+    }
+  });
+
+  // Admin product management routes
+  app.get("/api/admin/products", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const products = await storage.getAllInventory();
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching admin products:", error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.post("/api/admin/products", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      try {
+        const validatedData = insertInventorySchema.parse(req.body);
+        const product = await storage.createInventoryItem(validatedData);
+        res.json(product);
+      } catch (error: any) {
+        if (error.name === 'ZodError') {
+          return res.status(400).json({ message: "Validation error", errors: error.errors });
+        }
+        throw error;
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ message: "Failed to create product" });
+    }
+  });
+
+  app.patch("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const { id } = req.params;
+      try {
+        const validatedData = insertInventorySchema.partial().parse(req.body);
+        const product = await storage.updateInventoryItem(id, validatedData);
+        res.json(product);
+      } catch (error: any) {
+        if (error.name === 'ZodError') {
+          return res.status(400).json({ message: "Validation error", errors: error.errors });
+        }
+        throw error;
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(500).json({ message: "Failed to update product" });
+    }
+  });
+
+  app.delete("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const { id } = req.params;
+      await storage.deleteInventoryItem(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Failed to delete product" });
     }
   });
 
