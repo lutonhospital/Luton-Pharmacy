@@ -17,31 +17,36 @@ import {
   Truck
 } from "lucide-react";
 
+// Import pharmacy images
+import pharmacistImage1 from "@assets/stock_images/pharmacist_woman_wor_ef691acb.jpg";
+import pharmacistImage2 from "@assets/stock_images/female_healthcare_wo_82323547.jpg";
+import pharmacistImage3 from "@assets/stock_images/medical_professional_fef8052f.jpg";
+
 const heroSlides = [
   {
     id: 1,
     title: "Your Trusted Online Pharmacy",
     subtitle: "Quality medicines delivered to your doorstep",
-    description: "Browse our extensive catalog of prescription and over-the-counter medicines",
-    image: "/api/placeholder/800/400",
+    description: "Browse our extensive catalog of prescription and over-the-counter medicines with expert pharmaceutical care",
+    image: pharmacistImage1,
     cta: "Shop Now",
     ctaLink: "/shop"
   },
   {
     id: 2,
-    title: "Upload Your Prescription",
-    subtitle: "Easy prescription management",
-    description: "Upload your prescription and get your medicines delivered safely",
-    image: "/api/placeholder/800/400",
+    title: "Professional Pharmacy Services",
+    subtitle: "Expert medication dispensing",
+    description: "Our qualified female pharmacists ensure safe and accurate medication dispensing for all your healthcare needs",
+    image: pharmacistImage2,
     cta: "Upload Prescription",
     ctaLink: "/prescription-upload"
   },
   {
     id: 3,
-    title: "Consult with Our Pharmacists",
-    subtitle: "Professional healthcare advice",
-    description: "Book online consultations with certified pharmacists",
-    image: "/api/placeholder/800/400",
+    title: "Personalized Healthcare Solutions",
+    subtitle: "Professional pharmaceutical guidance",
+    description: "Receive expert consultation and medication counseling from our experienced pharmacy professionals",
+    image: pharmacistImage3,
     cta: "Book Consultation",
     ctaLink: "/consultation"
   }
@@ -115,8 +120,14 @@ export default function Home() {
                 index < currentSlide ? "-translate-x-full" : "translate-x-full"
               }`}
             >
-              <div className="h-full bg-gradient-to-r from-primary/90 to-primary/70 flex items-center">
-                <div className="container mx-auto px-4">
+              <div className="h-full relative flex items-center">
+                <img 
+                  src={slide.image} 
+                  alt={slide.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-primary/70"></div>
+                <div className="container mx-auto px-4 relative z-10">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                     <div className="text-white space-y-6">
                       <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
