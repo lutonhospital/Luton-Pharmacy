@@ -1,6 +1,22 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell, Hospital, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { 
+  Hospital, 
+  MapPin, 
+  Search, 
+  User as UserIcon, 
+  Heart, 
+  ShoppingCart,
+  Scale,
+  ChevronDown,
+  Phone,
+  Mail,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   DropdownMenu, 
@@ -17,11 +33,9 @@ interface NavigationProps {
 
 export default function Navigation({ user }: NavigationProps) {
   const [location] = useLocation();
-  const [currentView, setCurrentView] = useState<'patient' | 'staff'>(
-    user?.role === 'pharmacist' || user?.role === 'admin' ? 'staff' : 'patient'
-  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("Nairobi, Kenya");
 
-  const isStaff = user?.role === 'pharmacist' || user?.role === 'admin';
   const userInitials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` || 'U' : 'G';
 
   const navigationLinks = [
@@ -32,95 +46,221 @@ export default function Navigation({ user }: NavigationProps) {
   ];
 
   return (
-    <div className="bg-card border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-8">
-            <Link href="/">
-              <div className="flex items-center space-x-2 cursor-pointer">
-                <Hospital className="text-primary text-xl" />
-                <h1 className="text-xl font-semibold text-foreground">Luton Hospital Pharmacy</h1>
+    <div className="w-full">
+      {/* Top Header Bar */}
+      <div className="bg-primary text-white py-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center text-sm">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <Phone className="h-4 w-4" />
+                <span>Licensed Pharmacy - License #PH2024/KE/001</span>
               </div>
-            </Link>
-            
-            <nav className="hidden md:flex items-center space-x-6">
-              {navigationLinks.map((link) => (
-                <Link key={link.href} href={link.href}>
-                  <Button 
-                    variant="ghost" 
-                    className={`text-sm font-medium transition-colors ${
-                      location === link.href 
-                        ? "text-primary bg-primary/10" 
-                        : "text-muted-foreground hover:text-primary"
-                    }`}
-                    data-testid={`nav-${link.label.toLowerCase().replace(" ", "-")}`}
-                  >
-                    {link.label}
-                  </Button>
-                </Link>
-              ))}
-            </nav>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {user ? (
-              <>
-                {isStaff && (
-                  <div className="bg-secondary rounded-lg p-1 flex">
-                    <Button
-                      variant={currentView === 'patient' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setCurrentView('patient')}
-                      className={currentView === 'patient' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
-                      data-testid="button-patient-view"
-                    >
-                      Patient View
-                    </Button>
-                    <Button
-                      variant={currentView === 'staff' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setCurrentView('staff')}
-                      className={currentView === 'staff' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
-                      data-testid="button-staff-view"
-                    >
-                      Staff Dashboard
-                    </Button>
-                  </div>
-                )}
-                
-                <Button variant="ghost" size="icon" data-testid="button-notifications">
-                  <Bell className="h-5 w-5" />
+              <div className="flex items-center space-x-2">
+                <Mail className="h-4 w-4" />
+                <span>info@lutonhospitalpharmacy.co.ke</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-xs">Follow Us:</span>
+              <div className="flex space-x-2">
+                <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-white hover:text-primary hover:bg-white" data-testid="social-facebook">
+                  <Facebook className="h-3 w-3" />
                 </Button>
-                
+                <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-white hover:text-primary hover:bg-white" data-testid="social-twitter">
+                  <Twitter className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-white hover:text-primary hover:bg-white" data-testid="social-instagram">
+                  <Instagram className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-white hover:text-primary hover:bg-white" data-testid="social-linkedin">
+                  <Linkedin className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            {/* Logo and Location */}
+            <div className="flex items-center space-x-6">
+              <Link href="/">
+                <div className="flex items-center space-x-2 cursor-pointer">
+                  <Hospital className="text-primary text-2xl" />
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-900">Luton Hospital</h1>
+                    <p className="text-sm text-gray-600">Online Pharmacy</p>
+                  </div>
+                </div>
+              </Link>
+              
+              {/* Location Selector */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center space-x-2" data-testid="button-location">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="text-sm">{selectedLocation}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setSelectedLocation("Nairobi, Kenya")}>
+                    Nairobi, Kenya
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSelectedLocation("Mombasa, Kenya")}>
+                    Mombasa, Kenya
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSelectedLocation("Kisumu, Kenya")}>
+                    Kisumu, Kenya
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex-1 max-w-xl mx-8">
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Search for medicines, health products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-4 pr-12 py-3 border-2 border-gray-200 rounded-lg focus:border-primary"
+                  data-testid="input-search"
+                />
+                <Button 
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  data-testid="button-search"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Navigation Icons */}
+            <div className="flex items-center space-x-6">
+              {/* Supplements Link */}
+              <Link href="/shop?category=supplements">
+                <Button variant="ghost" className="text-sm font-medium text-gray-700 hover:text-primary" data-testid="nav-supplements">
+                  Supplements
+                </Button>
+              </Link>
+
+              {/* Account */}
+              {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
+                    <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-account">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user.profileImageUrl || undefined} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                        <AvatarFallback className="bg-primary text-white text-xs">
                           {userInitials}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">{user.firstName} {user.lastName}</span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-gray-900">Account</p>
+                        <p className="text-xs text-gray-500">{user.firstName}</p>
+                      </div>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Link href="/profile">My Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link href="/orders">My Orders</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link href="/prescriptions">My Prescriptions</Link>
+                    </DropdownMenuItem>
+                    {(user.role === 'admin' || user.role === 'pharmacist') && (
+                      <DropdownMenuItem>
+                        <Link href="/admin">Admin Dashboard</Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => window.location.href = '/api/logout'}>
                       Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </>
-            ) : (
-              <Button 
-                onClick={() => window.location.href = '/api/login'}
-                data-testid="button-login"
-              >
-                Login
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  onClick={() => window.location.href = '/api/login'}
+                  className="flex items-center space-x-2"
+                  data-testid="button-login"
+                >
+                  <UserIcon className="h-5 w-5" />
+                  <div className="text-left">
+                    <p className="text-sm font-medium">Account</p>
+                    <p className="text-xs text-gray-500">Sign In</p>
+                  </div>
+                </Button>
+              )}
+
+              {/* Compare */}
+              <Button variant="ghost" className="relative" data-testid="button-compare">
+                <Scale className="h-6 w-6 text-gray-600 hover:text-primary" />
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  0
+                </span>
+                <div className="hidden lg:block ml-2">
+                  <p className="text-sm font-medium text-gray-700">Compare</p>
+                </div>
               </Button>
-            )}
+
+              {/* Wishlist */}
+              <Button variant="ghost" className="relative" data-testid="button-wishlist">
+                <Heart className="h-6 w-6 text-gray-600 hover:text-primary" />
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  0
+                </span>
+                <div className="hidden lg:block ml-2">
+                  <p className="text-sm font-medium text-gray-700">Wishlist</p>
+                </div>
+              </Button>
+
+              {/* Cart */}
+              <Button variant="ghost" className="relative" data-testid="button-cart">
+                <ShoppingCart className="h-6 w-6 text-gray-600 hover:text-primary" />
+                <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  0
+                </span>
+                <div className="hidden lg:block ml-2">
+                  <p className="text-sm font-medium text-gray-700">Cart</p>
+                  <p className="text-xs text-gray-500">KES 0</p>
+                </div>
+              </Button>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Navigation Menu */}
+      <div className="bg-gray-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex items-center space-x-8 h-12">
+            {navigationLinks.map((link) => (
+              <Link key={link.href} href={link.href}>
+                <Button 
+                  variant="ghost" 
+                  className={`text-sm font-medium transition-colors h-12 px-4 ${
+                    location === link.href 
+                      ? "text-primary bg-primary/10 border-b-2 border-primary" 
+                      : "text-gray-700 hover:text-primary"
+                  }`}
+                  data-testid={`nav-${link.label.toLowerCase().replace(" ", "-")}`}
+                >
+                  {link.label}
+                </Button>
+              </Link>
+            ))}
+          </nav>
         </div>
       </div>
     </div>

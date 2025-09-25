@@ -126,6 +126,186 @@ const topBrands = [
   { id: 12, name: "Boehringer" }
 ];
 
+// Trending products data
+const trendingProducts = [
+  {
+    id: 1,
+    name: "Paracetamol 500mg",
+    price: 120,
+    originalPrice: 150,
+    discount: 20,
+    image: "💊",
+    rating: 4.8,
+    inStock: true
+  },
+  {
+    id: 2,
+    name: "Vitamin D3 Tablets",
+    price: 850,
+    originalPrice: 1000,
+    discount: 15,
+    image: "💊",
+    rating: 4.9,
+    inStock: true
+  },
+  {
+    id: 3,
+    name: "Hand Sanitizer",
+    price: 200,
+    originalPrice: 250,
+    discount: 20,
+    image: "🧴",
+    rating: 4.7,
+    inStock: true
+  },
+  {
+    id: 4,
+    name: "Face Masks (50 pack)",
+    price: 1500,
+    originalPrice: 1800,
+    discount: 17,
+    image: "😷",
+    rating: 4.6,
+    inStock: true
+  }
+];
+
+// Best sellers data
+const bestSellers = [
+  {
+    id: 1,
+    name: "Omeprazole 20mg",
+    price: 350,
+    originalPrice: 400,
+    image: "💊",
+    rating: 4.9,
+    soldCount: 1250,
+    inStock: true
+  },
+  {
+    id: 2,
+    name: "Multivitamin Complex",
+    price: 1200,
+    originalPrice: 1400,
+    image: "💊",
+    rating: 4.8,
+    soldCount: 980,
+    inStock: true
+  },
+  {
+    id: 3,
+    name: "Blood Pressure Monitor",
+    price: 4500,
+    originalPrice: 5000,
+    image: "🩺",
+    rating: 4.7,
+    soldCount: 750,
+    inStock: true
+  },
+  {
+    id: 4,
+    name: "Insulin Pens",
+    price: 2800,
+    originalPrice: 3200,
+    image: "💉",
+    rating: 4.9,
+    soldCount: 650,
+    inStock: true
+  }
+];
+
+// Health conditions data
+const healthConditions = [
+  {
+    id: 1,
+    name: "Diabetes Care",
+    description: "Blood glucose monitors, insulin, diabetic supplies",
+    image: "🩺",
+    link: "/shop?condition=diabetes",
+    productCount: 45
+  },
+  {
+    id: 2,
+    name: "Heart Health",
+    description: "Blood pressure monitors, heart medications",
+    image: "❤️",
+    link: "/shop?condition=heart",
+    productCount: 38
+  },
+  {
+    id: 3,
+    name: "Pain Relief",
+    description: "Analgesics, topical pain relievers, muscle relaxants",
+    image: "🦴",
+    link: "/shop?condition=pain",
+    productCount: 62
+  },
+  {
+    id: 4,
+    name: "Respiratory Care",
+    description: "Inhalers, cough syrups, allergy medications",
+    image: "🫁",
+    link: "/shop?condition=respiratory",
+    productCount: 34
+  },
+  {
+    id: 5,
+    name: "Mental Health",
+    description: "Antidepressants, anxiety medications, supplements",
+    image: "🧠",
+    link: "/shop?condition=mental-health",
+    productCount: 28
+  },
+  {
+    id: 6,
+    name: "Digestive Health",
+    description: "Probiotics, antacids, digestive enzymes",
+    image: "🦴",
+    link: "/shop?condition=digestive",
+    productCount: 42
+  }
+];
+
+// New arrivals data
+const newArrivals = [
+  {
+    id: 1,
+    name: "Smart Thermometer",
+    price: 3500,
+    image: "🌡️",
+    rating: 4.8,
+    isNew: true,
+    inStock: true
+  },
+  {
+    id: 2,
+    name: "Collagen Supplements",
+    price: 2200,
+    image: "💊",
+    rating: 4.7,
+    isNew: true,
+    inStock: true
+  },
+  {
+    id: 3,
+    name: "Pulse Oximeter",
+    price: 2800,
+    image: "📱",
+    rating: 4.9,
+    isNew: true,
+    inStock: true
+  },
+  {
+    id: 4,
+    name: "Herbal Tea Collection",
+    price: 800,
+    image: "🍃",
+    rating: 4.6,
+    isNew: true,
+    inStock: true
+  }
+];
+
 // Shop by category data
 const shopCategories = [
   {
@@ -476,6 +656,160 @@ export default function Home() {
                 <Clock className="w-24 h-24" />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trending Products */}
+      <section className="bg-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Trending Products</h2>
+            <Link href="/shop?section=trending">
+              <Button variant="outline" data-testid="button-view-all-trending">
+                View All
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {trendingProducts.map((product) => (
+              <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow" data-testid={`card-trending-${slugify(product.name)}`}>
+                <CardContent className="p-4">
+                  <div className="text-center mb-3">
+                    <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">{product.image}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-800 mb-2">{product.name}</h3>
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <span className="text-lg font-bold text-primary">KES {product.price}</span>
+                      {product.originalPrice && (
+                        <span className="text-sm text-gray-500 line-through">KES {product.originalPrice}</span>
+                      )}
+                    </div>
+                    {product.discount && (
+                      <Badge variant="secondary" className="text-xs">
+                        {product.discount}% OFF
+                      </Badge>
+                    )}
+                    <div className="flex items-center justify-center mt-2">
+                      <div className="flex items-center">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm text-gray-600 ml-1">{product.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Best Sellers */}
+      <section className="bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Best Sellers</h2>
+            <Link href="/shop?section=best-sellers">
+              <Button variant="outline" data-testid="button-view-all-bestsellers">
+                View All
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {bestSellers.map((product) => (
+              <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow" data-testid={`card-bestseller-${slugify(product.name)}`}>
+                <CardContent className="p-4">
+                  <div className="text-center mb-3">
+                    <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">{product.image}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-800 mb-2">{product.name}</h3>
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <span className="text-lg font-bold text-primary">KES {product.price}</span>
+                      {product.originalPrice && (
+                        <span className="text-sm text-gray-500 line-through">KES {product.originalPrice}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-center space-x-4 text-xs text-gray-600">
+                      <div className="flex items-center">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="ml-1">{product.rating}</span>
+                      </div>
+                      <span>{product.soldCount} sold</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Shop By Your Health Condition */}
+      <section className="bg-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Shop By Your Health Condition</h2>
+            <p className="text-gray-600">Find targeted solutions for your specific health needs</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            {healthConditions.map((condition) => (
+              <Link key={condition.id} href={condition.link}>
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow h-full" data-testid={`card-condition-${slugify(condition.name)}`}>
+                  <CardContent className="p-6 text-center">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-3xl">{condition.image}</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">{condition.name}</h3>
+                    <p className="text-sm text-gray-600 mb-3">{condition.description}</p>
+                    <Badge variant="outline" className="text-xs">
+                      {condition.productCount} products
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* New Arrivals */}
+      <section className="bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">New Arrivals</h2>
+            <Link href="/shop?section=new-arrivals">
+              <Button variant="outline" data-testid="button-view-all-newarrivals">
+                View All
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {newArrivals.map((product) => (
+              <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow relative" data-testid={`card-newarrival-${slugify(product.name)}`}>
+                <CardContent className="p-4">
+                  {product.isNew && (
+                    <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">
+                      NEW
+                    </Badge>
+                  )}
+                  <div className="text-center mb-3">
+                    <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">{product.image}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-800 mb-2">{product.name}</h3>
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <span className="text-lg font-bold text-primary">KES {product.price}</span>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm text-gray-600 ml-1">{product.rating}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
