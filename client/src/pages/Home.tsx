@@ -24,6 +24,42 @@ import homecareIcon from "@assets/stock_images/home_healthcare_medi_62274b5b.jpg
 import beautyIcon from "@assets/stock_images/beauty_cosmetics_ico_257b0616.jpg";
 import newArrivalsIcon from "@assets/stock_images/new_arrivals_pharmac_ea6f0152.jpg";
 
+// Import pharmacy images for hero slider
+import pharmacistImage1 from "@assets/stock_images/pharmacist_woman_wor_ef691acb.jpg";
+import pharmacistImage2 from "@assets/stock_images/female_healthcare_wo_82323547.jpg";
+import pharmacistImage3 from "@assets/stock_images/medical_professional_fef8052f.jpg";
+
+// Hero slider data with female pharmacist images
+const heroSlides = [
+  {
+    id: 1,
+    title: "Your Trusted Online Pharmacy",
+    subtitle: "Quality medicines delivered to your doorstep",
+    description: "Browse our extensive catalog of prescription and over-the-counter medicines with expert pharmaceutical care",
+    image: pharmacistImage1,
+    cta: "Shop Now",
+    ctaLink: "/shop"
+  },
+  {
+    id: 2,
+    title: "Professional Pharmacy Services",
+    subtitle: "Expert medication dispensing",
+    description: "Our qualified female pharmacists ensure safe and accurate medication dispensing for all your healthcare needs",
+    image: pharmacistImage2,
+    cta: "Upload Prescription",
+    ctaLink: "/prescription-upload"
+  },
+  {
+    id: 3,
+    title: "Personalized Healthcare Solutions",
+    subtitle: "Professional pharmaceutical guidance",
+    description: "Receive expert consultation and medication counseling from our experienced pharmacy professionals",
+    image: pharmacistImage3,
+    cta: "Book Consultation",
+    ctaLink: "/consultation"
+  }
+];
+
 // Category navigation data
 const categoryNavigation = [
   {
@@ -158,19 +194,117 @@ const slugify = (text: string): string => {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [currentBanner, setCurrentBanner] = useState(0);
+
+  // Auto-slide functionality for hero slider
+  useEffect(() => {
+    const heroTimer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
+
+    return () => clearInterval(heroTimer);
+  }, []);
 
   // Auto-slide functionality for promotional banners
   useEffect(() => {
-    const timer = setInterval(() => {
+    const bannerTimer = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % promotionalBanners.length);
     }, 4000);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(bannerTimer);
   }, []);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Hero Slider Section */}
+      <section className="relative h-[600px] overflow-hidden">
+        <div className="relative w-full h-full">
+          {heroSlides.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-transform duration-500 ease-in-out ${
+                index === currentSlide ? "translate-x-0" : 
+                index < currentSlide ? "-translate-x-full" : "translate-x-full"
+              }`}
+            >
+              <div className="h-full relative flex items-center">
+                <img 
+                  src={slide.image} 
+                  alt={slide.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-primary/70"></div>
+                <div className="container mx-auto px-4 relative z-10">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div className="text-white space-y-6">
+                      <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
+                        {slide.title}
+                      </h1>
+                      <h2 className="text-xl lg:text-2xl font-medium opacity-90">
+                        {slide.subtitle}
+                      </h2>
+                      <p className="text-lg opacity-80 max-w-md">
+                        {slide.description}
+                      </p>
+                      <Link href={slide.ctaLink}>
+                        <Button size="lg" variant="secondary" className="text-lg px-8 py-6" data-testid={`button-${slugify(slide.cta)}`}>
+                          {slide.cta}
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="hidden lg:block">
+                      <div className="w-full h-96 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center">
+                        <div className="text-white/60 text-6xl">🏥</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Slider Controls */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
+          data-testid="button-prev-slide"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
+          data-testid="button-next-slide"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+        
+        {/* Slide Indicators */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2">
+          {heroSlides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-3 h-3 rounded-full transition-colors ${
+                index === currentSlide ? "bg-white" : "bg-white/50"
+              }`}
+              data-testid={`button-slide-indicator-${index}`}
+            />
+          ))}
+        </div>
+      </section>
+
       {/* Header with Cart Review */}
       <div className="bg-white border-b border-gray-200 py-4">
         <div className="container mx-auto px-4">
