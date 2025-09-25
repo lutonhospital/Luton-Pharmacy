@@ -317,7 +317,7 @@ export default function AdminPrescriptionVerification() {
                         <SelectValue placeholder="All Statuses" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Statuses</SelectItem>
+                        <SelectItem value="all">All Statuses</SelectItem>
                         <SelectItem value="pending">Pending Review</SelectItem>
                         <SelectItem value="processed">Processed</SelectItem>
                         <SelectItem value="approved">Approved</SelectItem>

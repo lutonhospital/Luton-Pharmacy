@@ -240,7 +240,7 @@ export default function AdminOrderManagement() {
                     <SelectValue placeholder="All Statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Statuses</SelectItem>
+                    <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="pending_payment">Pending Payment</SelectItem>
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
@@ -259,7 +259,7 @@ export default function AdminOrderManagement() {
                     <SelectValue placeholder="All Methods" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Methods</SelectItem>
+                    <SelectItem value="all">All Methods</SelectItem>
                     <SelectItem value="pickup">Pickup</SelectItem>
                     <SelectItem value="delivery">Delivery</SelectItem>
                   </SelectContent>

@@ -833,13 +833,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllOrdersWithDetails(): Promise<any[]> {
-    return await db
+    const ordersWithUsers = await db
       .select({
         id: orders.id,
         orderNumber: orders.orderNumber,
         patientId: orders.patientId,
-        patientName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
-        patientEmail: users.email,
         status: orders.status,
         totalAmount: orders.totalAmount,
         paymentIntentId: orders.paymentIntentId,
@@ -850,11 +848,49 @@ export class DatabaseStorage implements IStorage {
         dispensedTime: orders.dispensedTime,
         notes: orders.notes,
         createdAt: orders.createdAt,
-        updatedAt: orders.updatedAt
+        updatedAt: orders.updatedAt,
+        // User details
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userEmail: users.email,
+        userPhone: users.phone
       })
       .from(orders)
       .leftJoin(users, eq(orders.patientId, users.id))
       .orderBy(desc(orders.createdAt));
+
+    // Transform to match frontend interface and get order items
+    const ordersWithDetails = await Promise.all(
+      ordersWithUsers.map(async (order) => {
+        const items = await this.getOrderItems(order.id);
+        
+        return {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          totalAmount: order.totalAmount,
+          paymentIntentId: order.paymentIntentId,
+          deliveryMethod: order.deliveryMethod,
+          deliveryAddressId: order.deliveryAddressId,
+          estimatedReadyTime: order.estimatedReadyTime,
+          actualReadyTime: order.actualReadyTime,
+          dispensedTime: order.dispensedTime,
+          notes: order.notes,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          patient: {
+            id: order.patientId,
+            firstName: order.userFirstName || '',
+            lastName: order.userLastName || '',
+            email: order.userEmail || '',
+            phone: order.userPhone || undefined
+          },
+          items: items
+        };
+      })
+    );
+
+    return ordersWithDetails;
   }
 
   async getAllPrescriptionUploadsWithPatientDetails(): Promise<any[]> {
