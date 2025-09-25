@@ -50,9 +50,9 @@ interface ProductFormData {
   category: string;
   unitPrice: string;
   currentStock: string;
-  minStockLevel: string;
+  minimumStock: string;
   requiresPrescription: boolean;
-  manufacturer: string;
+  supplier: string;
   expiryDate: string;
   imageUrl: string;
 }
@@ -64,9 +64,9 @@ const defaultFormData: ProductFormData = {
   category: "over_the_counter",
   unitPrice: "",
   currentStock: "",
-  minStockLevel: "10",
+  minimumStock: "10",
   requiresPrescription: false,
-  manufacturer: "",
+  supplier: "",
   expiryDate: "",
   imageUrl: "",
 };
@@ -188,7 +188,7 @@ export default function AdminProducts() {
 
   const filteredProducts = products?.filter(product =>
     product.medicationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase())
+    product.supplier?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -198,7 +198,7 @@ export default function AdminProducts() {
       ...formData,
       unitPrice: parseFloat(formData.unitPrice),
       currentStock: parseInt(formData.currentStock),
-      minStockLevel: parseInt(formData.minStockLevel),
+      minimumStock: parseInt(formData.minimumStock),
     };
 
     if (editingProduct) {
@@ -214,13 +214,13 @@ export default function AdminProducts() {
       medicationName: product.medicationName,
       dosage: product.dosage || "",
       description: product.description || "",
-      category: product.category,
+      category: product.category || "over_the_counter",
       unitPrice: product.unitPrice.toString(),
-      currentStock: product.currentStock.toString(),
-      minStockLevel: product.minStockLevel?.toString() || "10",
+      currentStock: (product.currentStock || 0).toString(),
+      minimumStock: product.minimumStock?.toString() || "10",
       requiresPrescription: product.requiresPrescription || false,
-      manufacturer: product.manufacturer || "",
-      expiryDate: product.expiryDate || "",
+      supplier: product.supplier || "",
+      expiryDate: product.expiryDate ? (product.expiryDate instanceof Date ? product.expiryDate.toISOString().split('T')[0] : product.expiryDate) : "",
       imageUrl: product.imageUrl || "",
     });
     setIsDialogOpen(true);
@@ -237,8 +237,8 @@ export default function AdminProducts() {
     return cat?.label || category;
   };
 
-  const getStockStatus = (stock: number, minLevel?: number) => {
-    if (stock === 0) return { label: "Out of Stock", variant: "destructive" as const };
+  const getStockStatus = (stock: number | null, minLevel?: number | null) => {
+    if (stock === null || stock === 0) return { label: "Out of Stock", variant: "destructive" as const };
     if (minLevel && stock <= minLevel) return { label: "Low Stock", variant: "secondary" as const };
     return { label: "In Stock", variant: "default" as const };
   };
@@ -344,26 +344,26 @@ export default function AdminProducts() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Min Stock Level</label>
+                    <label className="text-sm font-medium">Minimum Stock</label>
                     <Input
                       type="number"
                       min="0"
-                      value={formData.minStockLevel}
-                      onChange={(e) => setFormData({...formData, minStockLevel: e.target.value})}
+                      value={formData.minimumStock}
+                      onChange={(e) => setFormData({...formData, minimumStock: e.target.value})}
                       placeholder="10"
-                      data-testid="input-min-stock"
+                      data-testid="input-minimum-stock"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Manufacturer</label>
+                    <label className="text-sm font-medium">Supplier</label>
                     <Input
-                      value={formData.manufacturer}
-                      onChange={(e) => setFormData({...formData, manufacturer: e.target.value})}
+                      value={formData.supplier}
+                      onChange={(e) => setFormData({...formData, supplier: e.target.value})}
                       placeholder="e.g., GSK"
-                      data-testid="input-manufacturer"
+                      data-testid="input-supplier"
                     />
                   </div>
                   <div className="space-y-2">
@@ -460,7 +460,7 @@ export default function AdminProducts() {
                 <div>
                   <p className="text-sm text-muted-foreground">Low Stock</p>
                   <p className="text-2xl font-bold text-secondary">
-                    {products?.filter(p => p.minStockLevel && p.currentStock <= p.minStockLevel && p.currentStock > 0).length || 0}
+                    {products?.filter(p => p.minimumStock && p.currentStock && p.currentStock <= p.minimumStock && p.currentStock > 0).length || 0}
                   </p>
                 </div>
                 <AlertTriangle className="h-8 w-8 text-secondary" />
@@ -473,7 +473,7 @@ export default function AdminProducts() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total Value</p>
                   <p className="text-2xl font-bold">
-                    KES {products?.reduce((total, p) => total + (parseFloat(p.unitPrice) * p.currentStock), 0).toLocaleString() || 0}
+                    KES {products?.reduce((total, p) => total + (parseFloat(p.unitPrice) * (p.currentStock || 0)), 0).toLocaleString() || 0}
                   </p>
                 </div>
                 <DollarSign className="h-8 w-8 text-primary" />
@@ -488,7 +488,7 @@ export default function AdminProducts() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products by name or manufacturer..."
+                placeholder="Search products by name or supplier..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -523,21 +523,21 @@ export default function AdminProducts() {
                   </thead>
                   <tbody>
                     {filteredProducts?.map((product) => {
-                      const stockStatus = getStockStatus(product.currentStock, product.minStockLevel);
+                      const stockStatus = getStockStatus(product.currentStock, product.minimumStock);
                       return (
                         <tr key={product.id} className="border-b hover:bg-muted/50">
                           <td className="p-2">
                             <div>
                               <div className="font-medium">{product.medicationName}</div>
                               <div className="text-sm text-muted-foreground">{product.dosage}</div>
-                              {product.manufacturer && (
-                                <div className="text-xs text-muted-foreground">{product.manufacturer}</div>
+                              {product.supplier && (
+                                <div className="text-xs text-muted-foreground">{product.supplier}</div>
                               )}
                             </div>
                           </td>
                           <td className="p-2">
                             <Badge variant="outline">
-                              {getCategoryLabel(product.category)}
+                              {getCategoryLabel(product.category || "over_the_counter")}
                             </Badge>
                           </td>
                           <td className="p-2 font-medium">
@@ -545,10 +545,10 @@ export default function AdminProducts() {
                           </td>
                           <td className="p-2">
                             <div>
-                              <div className="font-medium">{product.currentStock}</div>
-                              {product.minStockLevel && (
+                              <div className="font-medium">{product.currentStock || 0}</div>
+                              {product.minimumStock && (
                                 <div className="text-xs text-muted-foreground">
-                                  Min: {product.minStockLevel}
+                                  Min: {product.minimumStock}
                                 </div>
                               )}
                             </div>

@@ -7,6 +7,30 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema } from "@shared/schema";
 
+// Admin validation schemas
+const adminOrderUpdateSchema = z.object({
+  status: z.enum(['pending_payment', 'paid', 'processing', 'ready', 'completed', 'cancelled']),
+  notes: z.string().optional()
+});
+
+const adminPrescriptionVerificationSchema = z.object({
+  action: z.enum(['approve', 'reject', 'flag', 'processed']),
+  notes: z.string().optional(),
+  prescriptionData: z.object({
+    medicationName: z.string(),
+    dosage: z.string(),
+    instructions: z.string(),
+    quantity: z.number().int().positive()
+  }).optional()
+});
+
+const adminConsultationUpdateSchema = z.object({
+  status: z.enum(['scheduled', 'in_progress', 'completed', 'cancelled', 'no_show']).optional(),
+  notes: z.string().optional(),
+  duration: z.number().int().positive().optional(),
+  scheduledDate: z.string().datetime().optional()
+});
+
 // Use testing Stripe key if available, otherwise use production key
 const stripeSecretKey = process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
 
@@ -838,6 +862,230 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error importing products:", error);
       res.status(500).json({ message: "Failed to import products" });
+    }
+  });
+
+  // Admin-specific routes for dashboard functionality
+  app.get("/api/admin/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      // Use Promise.all for better performance
+      const [
+        pendingOrders,
+        paidOrders,
+        processingOrders,
+        readyOrders,
+        completedOrders,
+        cancelledOrders,
+        totalOrders,
+        salesToday,
+        salesWeek,
+        salesMonth,
+        paidRevenue,
+        pendingRevenue,
+        lowStockAlerts,
+        newConsultations,
+        totalProducts,
+        activeUsers
+      ] = await Promise.all([
+        storage.getOrderCountByStatus('pending_payment'),
+        storage.getOrderCountByStatus('paid'),
+        storage.getOrderCountByStatus('processing'),
+        storage.getOrderCountByStatus('ready'),
+        storage.getOrderCountByStatus('completed'),
+        storage.getOrderCountByStatus('cancelled'),
+        storage.getTotalOrderCount(),
+        storage.getSalesToday(),
+        storage.getSalesThisWeek(),
+        storage.getSalesThisMonth(),
+        storage.getPaidRevenue(),
+        storage.getPendingRevenue(),
+        storage.getLowStockCount(),
+        storage.getPendingConsultationCount(),
+        storage.getTotalProductCount(),
+        storage.getActiveUserCount()
+      ]);
+
+      const stats = {
+        orders: {
+          pending: pendingOrders,
+          approved: paidOrders + processingOrders,
+          fulfilled: readyOrders,
+          delivered: completedOrders,
+          cancelled: cancelledOrders,
+          total: totalOrders
+        },
+        sales: {
+          today: salesToday,
+          week: salesWeek,
+          month: salesMonth
+        },
+        revenue: {
+          paid: paidRevenue,
+          pending: pendingRevenue
+        },
+        lowStockAlerts,
+        newConsultations,
+        totalProducts,
+        activeUsers
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ message: "Failed to fetch admin stats" });
+    }
+  });
+
+  app.get("/api/admin/orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const orders = await storage.getAllOrdersWithDetails();
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching admin orders:", error);
+      res.status(500).json({ message: "Failed to fetch admin orders" });
+    }
+  });
+
+  app.patch("/api/admin/orders/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const { id } = req.params;
+      
+      // Validate request body with Zod
+      const validationResult = adminOrderUpdateSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request data",
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const { status, notes } = validationResult.data;
+      
+      const order = await storage.updateOrderStatus(id, status, notes);
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating admin order:", error);
+      res.status(500).json({ message: "Failed to update order" });
+    }
+  });
+
+  app.get("/api/admin/prescription-uploads", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const uploads = await storage.getAllPrescriptionUploadsWithPatientDetails();
+      res.json(uploads);
+    } catch (error) {
+      console.error("Error fetching admin prescription uploads:", error);
+      res.status(500).json({ message: "Failed to fetch prescription uploads" });
+    }
+  });
+
+  app.patch("/api/admin/prescription-uploads/:id/verify", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const { id } = req.params;
+      
+      // Validate request body with Zod
+      const validationResult = adminPrescriptionVerificationSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request data",
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const { action, notes, prescriptionData } = validationResult.data;
+      
+      let status = 'processed';
+      if (action === 'approve') status = 'approved';
+      else if (action === 'reject') status = 'rejected';
+      else if (action === 'flag') status = 'flagged';
+      
+      const upload = await storage.updatePrescriptionUploadStatus(id, status, notes);
+      res.json(upload);
+    } catch (error) {
+      console.error("Error verifying prescription upload:", error);
+      res.status(500).json({ message: "Failed to verify prescription upload" });
+    }
+  });
+
+  app.get("/api/admin/consultations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const consultations = await storage.getAllConsultationsWithPatientDetails();
+      res.json(consultations);
+    } catch (error) {
+      console.error("Error fetching admin consultations:", error);
+      res.status(500).json({ message: "Failed to fetch consultations" });
+    }
+  });
+
+  app.patch("/api/admin/consultations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      const { id } = req.params;
+      
+      // Validate request body with Zod
+      const validationResult = adminConsultationUpdateSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request data",
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const updates = validationResult.data;
+      
+      const consultation = await storage.updateConsultation(id, updates);
+      res.json(consultation);
+    } catch (error) {
+      console.error("Error updating admin consultation:", error);
+      res.status(500).json({ message: "Failed to update consultation" });
     }
   });
 

@@ -109,6 +109,25 @@ export interface IStorage {
 
   // Analytics
   getDashboardStats(userId: string, role: string): Promise<any>;
+
+  // Admin-specific analytics methods
+  getOrderCountByStatus(status: string): Promise<number>;
+  getTotalOrderCount(): Promise<number>;
+  getSalesToday(): Promise<number>;
+  getSalesThisWeek(): Promise<number>;
+  getSalesThisMonth(): Promise<number>;
+  getPaidRevenue(): Promise<number>;
+  getPendingRevenue(): Promise<number>;
+  getLowStockCount(): Promise<number>;
+  getPendingConsultationCount(): Promise<number>;
+  getTotalProductCount(): Promise<number>;
+  getActiveUserCount(): Promise<number>;
+
+  // Admin data retrieval with details
+  getAllOrdersWithDetails(): Promise<any[]>;
+  getAllPrescriptionUploadsWithPatientDetails(): Promise<any[]>;
+  getAllConsultationsWithPatientDetails(): Promise<any[]>;
+  updateConsultation(id: string, updates: Partial<InsertConsultation>): Promise<Consultation>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -661,16 +680,22 @@ export class DatabaseStorage implements IStorage {
 
   // Enhanced inventory operations for shop
   async getActiveProducts(category?: string): Promise<Inventory[]> {
-    let query = db
-      .select()
-      .from(inventory)
-      .where(eq(inventory.isActive, true));
-    
     if (category) {
-      query = query.where(eq(inventory.category, category));
+      return await db
+        .select()
+        .from(inventory)
+        .where(and(
+          eq(inventory.isActive, true),
+          eq(inventory.category, category)
+        ))
+        .orderBy(asc(inventory.medicationName));
     }
     
-    return await query.orderBy(asc(inventory.medicationName));
+    return await db
+      .select()
+      .from(inventory)
+      .where(eq(inventory.isActive, true))
+      .orderBy(asc(inventory.medicationName));
   }
 
   async searchProducts(searchQuery: string): Promise<Inventory[]> {
@@ -693,6 +718,190 @@ export class DatabaseStorage implements IStorage {
         eq(inventory.category, category)
       ))
       .orderBy(asc(inventory.medicationName));
+  }
+
+  // Admin-specific analytics implementations
+  async getOrderCountByStatus(status: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(orders)
+      .where(eq(orders.status, status));
+    return result.count;
+  }
+
+  async getTotalOrderCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(orders);
+    return result.count;
+  }
+
+  async getSalesToday(): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [result] = await db
+      .select({ count: count() })
+      .from(orders)
+      .where(and(
+        sql`${orders.createdAt} >= ${today}`,
+        sql`${orders.createdAt} < ${tomorrow}`,
+        sql`${orders.status} IN ('paid', 'processing', 'ready', 'completed')`
+      ));
+    return result.count;
+  }
+
+  async getSalesThisWeek(): Promise<number> {
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    const [result] = await db
+      .select({ count: count() })
+      .from(orders)
+      .where(and(
+        sql`${orders.createdAt} >= ${weekStart}`,
+        sql`${orders.status} IN ('paid', 'processing', 'ready', 'completed')`
+      ));
+    return result.count;
+  }
+
+  async getSalesThisMonth(): Promise<number> {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const [result] = await db
+      .select({ count: count() })
+      .from(orders)
+      .where(and(
+        sql`${orders.createdAt} >= ${monthStart}`,
+        sql`${orders.status} IN ('paid', 'processing', 'ready', 'completed')`
+      ));
+    return result.count;
+  }
+
+  async getPaidRevenue(): Promise<number> {
+    const [result] = await db
+      .select({ total: sql<number>`COALESCE(SUM(CAST(${orders.totalAmount} AS DECIMAL)), 0)` })
+      .from(orders)
+      .where(sql`${orders.status} IN ('paid', 'processing', 'ready', 'completed')`);
+    return Number(result.total) || 0;
+  }
+
+  async getPendingRevenue(): Promise<number> {
+    const [result] = await db
+      .select({ total: sql<number>`COALESCE(SUM(CAST(${orders.totalAmount} AS DECIMAL)), 0)` })
+      .from(orders)
+      .where(eq(orders.status, 'pending_payment'));
+    return Number(result.total) || 0;
+  }
+
+  async getLowStockCount(): Promise<number> {
+    const lowStockItems = await this.getLowStockItems();
+    return lowStockItems.length;
+  }
+
+  async getPendingConsultationCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(consultations)
+      .where(eq(consultations.status, 'scheduled'));
+    return result.count;
+  }
+
+  async getTotalProductCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(inventory)
+      .where(eq(inventory.isActive, true));
+    return result.count;
+  }
+
+  async getActiveUserCount(): Promise<number> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    // Use updatedAt as a proxy for activity since lastLoginAt doesn't exist
+    const [result] = await db
+      .select({ count: count() })
+      .from(users)
+      .where(sql`${users.updatedAt} >= ${thirtyDaysAgo}`);
+    return result.count;
+  }
+
+  async getAllOrdersWithDetails(): Promise<any[]> {
+    return await db
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        patientId: orders.patientId,
+        patientName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
+        patientEmail: users.email,
+        status: orders.status,
+        totalAmount: orders.totalAmount,
+        paymentIntentId: orders.paymentIntentId,
+        deliveryMethod: orders.deliveryMethod,
+        deliveryAddressId: orders.deliveryAddressId,
+        estimatedReadyTime: orders.estimatedReadyTime,
+        actualReadyTime: orders.actualReadyTime,
+        dispensedTime: orders.dispensedTime,
+        notes: orders.notes,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt
+      })
+      .from(orders)
+      .leftJoin(users, eq(orders.patientId, users.id))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async getAllPrescriptionUploadsWithPatientDetails(): Promise<any[]> {
+    return await db
+      .select({
+        id: prescriptionUploads.id,
+        patientId: prescriptionUploads.patientId,
+        patientName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
+        patientEmail: users.email,
+        fileName: prescriptionUploads.fileName,
+        fileUrl: prescriptionUploads.fileUrl,
+        status: prescriptionUploads.status,
+        notes: prescriptionUploads.notes,
+        createdAt: prescriptionUploads.createdAt,
+        processedAt: prescriptionUploads.processedAt
+      })
+      .from(prescriptionUploads)
+      .leftJoin(users, eq(prescriptionUploads.patientId, users.id))
+      .orderBy(desc(prescriptionUploads.createdAt));
+  }
+
+  async getAllConsultationsWithPatientDetails(): Promise<any[]> {
+    return await db
+      .select({
+        id: consultations.id,
+        patientId: consultations.patientId,
+        patientName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
+        patientEmail: users.email,
+        type: consultations.type,
+        scheduledDate: consultations.scheduledDate,
+        duration: consultations.duration,
+        status: consultations.status,
+        notes: consultations.notes,
+        createdAt: consultations.createdAt
+      })
+      .from(consultations)
+      .leftJoin(users, eq(consultations.patientId, users.id))
+      .orderBy(desc(consultations.scheduledDate));
+  }
+
+  async updateConsultation(id: string, updates: Partial<InsertConsultation>): Promise<Consultation> {
+    const [updatedConsultation] = await db
+      .update(consultations)
+      .set(updates)
+      .where(eq(consultations.id, id))
+      .returning();
+    return updatedConsultation;
   }
 }
 
