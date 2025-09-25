@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Home from "@/pages/Home";
@@ -18,6 +19,7 @@ import AdminImport from "@/pages/AdminImport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminOrderManagement from "@/pages/AdminOrderManagement";
 import AdminPrescriptionVerification from "@/pages/AdminPrescriptionVerification";
+import AdminLogin from "@/pages/AdminLogin";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Payment from "@/pages/Payment";
@@ -25,12 +27,15 @@ import NotFound from "@/pages/not-found";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { user: adminUser, isAuthenticated: isAdminAuthenticated, isAdmin } = useAdminAuth();
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navigation user={user} />
+      {/* Only show navigation for non-admin routes */}
+      {!window.location.pathname.startsWith('/admin') && <Navigation user={user} />}
       <main className="flex-1">
         <Switch>
+          {/* Public routes */}
           <Route path="/" component={Home} />
           <Route path="/shop" component={Shop} />
           <Route path="/about" component={About} />
@@ -39,28 +44,35 @@ function Router() {
           <Route path="/prescription-upload" component={PrescriptionUpload} />
           <Route path="/consultation" component={Consultation} />
           <Route path="/landing" component={Landing} />
+
+          {/* Admin login route - accessible without authentication */}
+          <Route path="/admin/login" component={AdminLogin} />
+
+          {/* Client authentication routes */}
           {isAuthenticated && (
             <>
               <Route path="/dashboard" component={Dashboard} />
               <Route path="/payment/:orderId" component={Payment} />
-              {(user?.role === 'admin' || user?.role === 'pharmacist') && (
-                <>
-                  <Route path="/admin" component={AdminDashboard} />
-                  <Route path="/admin/dashboard" component={AdminDashboard} />
-                  <Route path="/admin/orders" component={AdminOrderManagement} />
-                  <Route path="/admin/prescriptions" component={AdminPrescriptionVerification} />
-                  <Route path="/admin/products" component={AdminProducts} />
-                </>
-              )}
-              {user?.role === 'admin' && (
-                <Route path="/admin/import" component={AdminImport} />
-              )}
             </>
           )}
+
+          {/* Admin routes - require admin authentication */}
+          {isAdminAuthenticated && isAdmin && (
+            <>
+              <Route path="/admin" component={AdminDashboard} />
+              <Route path="/admin/dashboard" component={AdminDashboard} />
+              <Route path="/admin/orders" component={AdminOrderManagement} />
+              <Route path="/admin/prescriptions" component={AdminPrescriptionVerification} />
+              <Route path="/admin/products" component={AdminProducts} />
+              <Route path="/admin/import" component={AdminImport} />
+            </>
+          )}
+
           <Route component={NotFound} />
         </Switch>
       </main>
-      <Footer />
+      {/* Only show footer for non-admin routes */}
+      {!window.location.pathname.startsWith('/admin') && <Footer />}
     </div>
   );
 }

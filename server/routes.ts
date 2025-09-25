@@ -78,6 +78,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin authentication routes
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      console.log('Admin login attempt:', { 
+        username: username ? `"${username}"` : undefined, 
+        password: password ? '[PASSWORD PROVIDED]' : undefined,
+        envUsername: process.env.ADMIN_USERNAME ? `"${process.env.ADMIN_USERNAME}"` : undefined,
+        envPassword: process.env.ADMIN_PASSWORD ? '[ENV PASSWORD SET]' : undefined
+      });
+
+      if (!username || !password) {
+        console.log('Admin login failed: missing credentials');
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+
+      // Check credentials against environment variables
+      if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
+        console.log('Admin login failed: credential mismatch');
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      // Create admin session
+      (req as any).session.adminUser = {
+        id: 'admin',
+        username: username,
+        role: 'admin',
+        isAdmin: true,
+        loginTime: new Date()
+      };
+
+      res.json({ 
+        message: "Login successful",
+        user: {
+          id: 'admin',
+          username: username,
+          role: 'admin',
+          firstName: 'Admin',
+          lastName: 'User'
+        }
+      });
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.get('/api/admin/auth/user', async (req, res) => {
+    try {
+      const adminUser = (req as any).session?.adminUser;
+      
+      if (!adminUser || !adminUser.isAdmin) {
+        return res.status(401).json({ message: "Not authenticated as admin" });
+      }
+
+      res.json({
+        id: adminUser.id,
+        username: adminUser.username,
+        role: adminUser.role,
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@lutonhospital.co.ke',
+        isAdmin: true
+      });
+    } catch (error) {
+      console.error("Admin auth check error:", error);
+      res.status(500).json({ message: "Authentication check failed" });
+    }
+  });
+
+  app.post('/api/admin/logout', async (req, res) => {
+    try {
+      delete (req as any).session.adminUser;
+      res.json({ message: "Logout successful" });
+    } catch (error) {
+      console.error("Admin logout error:", error);
+      res.status(500).json({ message: "Logout failed" });
+    }
+  });
+
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
