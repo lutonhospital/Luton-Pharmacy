@@ -372,11 +372,11 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentBanner, setCurrentBanner] = useState(0);
 
-  // Fetch 6 random products for Featured Medicines section
+  // Fetch 12 random products for Featured Medicines section
   const { data: featuredMedicines, isLoading: medicinesLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products", { limit: 6, random: true }],
+    queryKey: ["/api/products", { limit: 12, random: true }],
     queryFn: async () => {
-      const response = await fetch("/api/products?limit=6&random=true");
+      const response = await fetch("/api/products?limit=12&random=true");
       if (!response.ok) throw new Error("Failed to fetch featured medicines");
       return response.json();
     },
