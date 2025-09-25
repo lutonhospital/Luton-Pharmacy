@@ -348,7 +348,7 @@ export default function Shop() {
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="space-y-3">
                               <div>
                                 <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
                                 {product.originalPrice && (
@@ -360,6 +360,7 @@ export default function Shop() {
                               <Button
                                 onClick={() => handleAddToCart(product)}
                                 disabled={addToCartMutation.isPending || product.currentStock === 0}
+                                className="w-full"
                                 data-testid={`button-add-to-cart-${product.id}`}
                               >
                                 {product.currentStock === 0 ? "Out of Stock" : "Add to Cart"}
@@ -402,15 +403,18 @@ export default function Shop() {
                                   </span>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
-                                {product.originalPrice && (
-                                  <p className="text-sm text-muted-foreground line-through">
-                                    KES {parseFloat(product.originalPrice).toLocaleString()}
-                                  </p>
-                                )}
+                              <div className="text-right min-w-[140px] flex flex-col justify-between">
+                                <div>
+                                  <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
+                                  {product.originalPrice && (
+                                    <p className="text-sm text-muted-foreground line-through">
+                                      KES {parseFloat(product.originalPrice).toLocaleString()}
+                                    </p>
+                                  )}
+                                </div>
                                 <Button
-                                  className="mt-2"
+                                  className="mt-2 w-full"
+                                  size="sm"
                                   onClick={() => handleAddToCart(product)}
                                   disabled={addToCartMutation.isPending || product.currentStock === 0}
                                   data-testid={`button-add-to-cart-${product.id}`}

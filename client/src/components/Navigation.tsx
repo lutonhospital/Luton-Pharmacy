@@ -89,8 +89,13 @@ export default function Navigation({ user }: NavigationProps) {
             {/* Logo and Location */}
             <div className="flex items-center space-x-6">
               <Link href="/">
-                <div className="cursor-pointer">
-                  <img src={logoPath} alt="Luton Hospital Logo" className="h-12 w-auto" />
+                <div className="cursor-pointer flex items-center">
+                  <img 
+                    src={logoPath} 
+                    alt="Luton Hospital Logo" 
+                    className="h-16 w-auto object-contain" 
+                    style={{ maxWidth: '200px' }}
+                  />
                 </div>
               </Link>
               
