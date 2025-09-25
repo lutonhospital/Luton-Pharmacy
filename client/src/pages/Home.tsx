@@ -779,6 +779,100 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Health Insights & Updates */}
+      <section className="bg-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-3">Health Insights & Updates</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Stay informed with the latest research, health tips, and pharmaceutical advancements from our expert team
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Article 1 */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow" data-testid="article-malaria-prevention">
+              <div className="h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                <span className="text-6xl">🦟</span>
+              </div>
+              <div className="p-6">
+                <span className="inline-block bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                  Disease Prevention
+                </span>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">Malaria Prevention in Kenya: Essential Tips for the Rainy Season</h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                  Learn about the latest malaria prevention strategies, including proper use of bed nets, effective mosquito repellents, and when to seek treatment in Kenya.
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Dec 20, 2024</span>
+                  <Link href="/news/malaria-prevention-kenya">
+                    <Button variant="outline" size="sm" data-testid="button-read-more-malaria">
+                      Read More
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Article 2 */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow" data-testid="article-diabetes-management">
+              <div className="h-48 bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center">
+                <span className="text-6xl">📊</span>
+              </div>
+              <div className="p-6">
+                <span className="inline-block bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                  Chronic Care
+                </span>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">Managing Diabetes: Blood Sugar Monitoring Best Practices</h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                  Discover the latest guidelines for diabetes management, including proper blood glucose monitoring, medication timing, and dietary considerations for Kenyan patients.
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Dec 18, 2024</span>
+                  <Link href="/news/diabetes-management-guidelines">
+                    <Button variant="outline" size="sm" data-testid="button-read-more-diabetes">
+                      Read More
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Article 3 */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow" data-testid="article-hypertension-awareness">
+              <div className="h-48 bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center">
+                <span className="text-6xl">❤️</span>
+              </div>
+              <div className="p-6">
+                <span className="inline-block bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                  Heart Health
+                </span>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">Understanding Hypertension: The Silent Killer in Kenya</h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                  Learn about hypertension symptoms, risk factors, and the importance of regular blood pressure monitoring for Kenyan adults over 40.
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Dec 15, 2024</span>
+                  <Link href="/news/hypertension-awareness-kenya">
+                    <Button variant="outline" size="sm" data-testid="button-read-more-hypertension">
+                      Read More
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <Link href="/news">
+              <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-3" data-testid="button-view-all-health-insights">
+                View All Health Articles
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Chat Support Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <Button 

@@ -10,6 +10,7 @@ import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
+import News from "@/pages/News";
 import AdminProducts from "@/pages/AdminProducts";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
@@ -28,6 +29,7 @@ function Router() {
           <Route path="/shop" component={Shop} />
           <Route path="/about" component={About} />
           <Route path="/contact" component={Contact} />
+          <Route path="/news" component={News} />
           <Route path="/landing" component={Landing} />
           {isAuthenticated && (
             <>
