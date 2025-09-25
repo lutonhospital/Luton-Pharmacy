@@ -326,12 +326,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      // Convert GBP to pence (smallest currency unit)
-      const amountInPence = Math.round(parseFloat(order.totalAmount) * 100);
+      // Convert KES to cents (smallest currency unit)
+      const amountInCents = Math.round(parseFloat(order.totalAmount) * 100);
 
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: amountInPence,
-        currency: "gbp",
+        amount: amountInCents,
+        currency: "kes",
         metadata: {
           orderId: order.id,
         },

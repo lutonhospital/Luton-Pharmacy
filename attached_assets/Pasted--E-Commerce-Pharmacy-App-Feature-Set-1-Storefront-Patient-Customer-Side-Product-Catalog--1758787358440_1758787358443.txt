@@ -1,0 +1,85 @@
+🛒 E-Commerce Pharmacy App Feature Set
+1️⃣ Storefront (Patient / Customer Side)
+
+✅ Product Catalog – Categories for medicines, supplements, medical devices, personal care, etc.
+✅ Search & Filters – Search by name, category, brand, or health condition.
+✅ Product Pages – Each product with:
+
+Name, image, dosage, description
+
+Price, availability (in stock / out of stock)
+
+Add to cart / buy now
+✅ Prescription Upload (if needed) – For prescription-only medicines, user must upload prescription before checkout.
+✅ Shopping Cart & Wishlist – Users can save items for later.
+✅ Checkout Process – Smooth, with:
+
+Delivery address
+
+Payment method (M-Pesa, card, wallet, etc.)
+
+Order confirmation
+
+2️⃣ Payments & Checkout
+
+✅ Multiple Payment Methods
+
+M-Pesa STK push (Paybill / Till number)
+
+Card payments (Visa, Mastercard)
+
+Bank transfer instructions
+✅ Cash on Delivery (Optional)
+✅ Discount Codes / Coupons
+✅ VAT / Tax Calculation (if applicable)
+
+3️⃣ Logistics & Delivery
+
+✅ Delivery & Pickup Options
+
+Home delivery with delivery fee
+
+Pickup from hospital pharmacy
+✅ Delivery Tracking – Status updates: Processing → Out for Delivery → Delivered
+✅ Delivery Scheduling – Customer chooses delivery time window
+
+4️⃣ User Accounts
+
+✅ Sign Up / Login – Email, phone number, OTP verification
+✅ Profile Management – Personal info, address, medical history
+✅ Order History – Track past purchases
+✅ Repeat Orders – Reorder previously purchased medicines
+✅ Notifications – Push notifications for promotions, order updates
+
+5️⃣ Marketing & Engagement
+
+✅ Promotions & Banners – Highlight special offers, discounts
+✅ Featured Products – Show best sellers or hospital-recommended items
+✅ Loyalty Points / Rewards – Encourage repeat purchases
+✅ Push Notifications – Remind users of abandoned carts, offer discounts
+
+6️⃣ Admin & Pharmacy Dashboard
+
+✅ Product Management – Add/edit/delete products, manage categories
+✅ Inventory Management – Stock level alerts, auto-update when orders placed
+✅ Order Management – View, approve, fulfill, cancel orders
+✅ Prescription Verification Panel – For orders requiring doctor approval
+✅ Reports & Analytics – Sales trends, popular products, revenue tracking
+✅ User Management – Manage customers and pharmacy staff accounts
+
+7️⃣ Security & Compliance
+
+✅ GDPR/Local Data Compliance – Securely handle patient data
+✅ Role-Based Access Control – Different permissions for admins, pharmacists, delivery staff
+✅ Encrypted Payments – Secure checkout (SSL, PCI compliance)
+✅ Audit Trail – Track all orders and prescription approvals
+
+8️⃣ Technical Requirements
+
+✅ Cross-Platform App – React Native (Android & iOS) + React Web App
+✅ Scalable Backend – Node.js/Django + PostgreSQL/MySQL
+✅ Hosting & Domain – Cloud-based, with hospital subdomain (e.g. pharmacy.lutonhospital.co.ke)
+✅ CI/CD Pipeline – Smooth updates and bug fixes
+
+💡 Pro Tip:
+Launch with core e-commerce features first (catalog, cart, checkout, payment, delivery) and add advanced features (loyalty points, prescription verification, live chat) in later updates.

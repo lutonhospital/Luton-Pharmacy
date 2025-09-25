@@ -8,6 +8,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { Link, useLocation } from "wouter";
 import type { User } from "@shared/schema";
 
 interface NavigationProps {
@@ -15,6 +16,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ user }: NavigationProps) {
+  const [location] = useLocation();
   const [currentView, setCurrentView] = useState<'patient' | 'staff'>(
     user?.role === 'pharmacist' || user?.role === 'admin' ? 'staff' : 'patient'
   );
@@ -22,15 +24,42 @@ export default function Navigation({ user }: NavigationProps) {
   const isStaff = user?.role === 'pharmacist' || user?.role === 'admin';
   const userInitials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` || 'U' : 'G';
 
+  const navigationLinks = [
+    { href: "/", label: "Home" },
+    { href: "/shop", label: "Shop" },
+    { href: "/about", label: "About Us" },
+    { href: "/contact", label: "Contact" },
+  ];
+
   return (
     <div className="bg-card border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Hospital className="text-primary text-xl" />
-              <h1 className="text-xl font-semibold text-foreground">Luton Hospital Pharmacy</h1>
-            </div>
+          <div className="flex items-center space-x-8">
+            <Link href="/">
+              <div className="flex items-center space-x-2 cursor-pointer">
+                <Hospital className="text-primary text-xl" />
+                <h1 className="text-xl font-semibold text-foreground">Luton Hospital Pharmacy</h1>
+              </div>
+            </Link>
+            
+            <nav className="hidden md:flex items-center space-x-6">
+              {navigationLinks.map((link) => (
+                <Link key={link.href} href={link.href}>
+                  <Button 
+                    variant="ghost" 
+                    className={`text-sm font-medium transition-colors ${
+                      location === link.href 
+                        ? "text-primary bg-primary/10" 
+                        : "text-muted-foreground hover:text-primary"
+                    }`}
+                    data-testid={`nav-${link.label.toLowerCase().replace(" ", "-")}`}
+                  >
+                    {link.label}
+                  </Button>
+                </Link>
+              ))}
+            </nav>
           </div>
           
           <div className="flex items-center space-x-4">

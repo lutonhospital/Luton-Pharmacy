@@ -342,10 +342,10 @@ export default function Shop() {
                             </div>
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-lg font-bold text-foreground">£{product.unitPrice}</p>
+                                <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
                                 {product.originalPrice && (
                                   <p className="text-sm text-muted-foreground line-through">
-                                    £{product.originalPrice}
+                                    KES {parseFloat(product.originalPrice).toLocaleString()}
                                   </p>
                                 )}
                               </div>
@@ -388,10 +388,10 @@ export default function Shop() {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="text-lg font-bold text-foreground">£{product.unitPrice}</p>
+                                <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
                                 {product.originalPrice && (
                                   <p className="text-sm text-muted-foreground line-through">
-                                    £{product.originalPrice}
+                                    KES {parseFloat(product.originalPrice).toLocaleString()}
                                   </p>
                                 )}
                                 <Button
@@ -479,7 +479,7 @@ export default function Shop() {
                   
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center mb-4">
-                      <span className="font-semibold">Total: £{getTotalPrice().toFixed(2)}</span>
+                      <span className="font-semibold">Total: KES {getTotalPrice().toLocaleString()}</span>
                     </div>
                     <Button className="w-full" data-testid="button-checkout">
                       Proceed to Checkout
