@@ -10,10 +10,13 @@ import { Button } from "@/components/ui/button";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+// Use testing Stripe public key if available, otherwise use production key
+const stripePublicKey = import.meta.env.VITE_TESTING_STRIPE_PUBLIC_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+
+if (!stripePublicKey) {
+  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY or VITE_TESTING_STRIPE_PUBLIC_KEY');
 }
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+const stripePromise = loadStripe(stripePublicKey);
 
 const CheckoutForm = ({ orderId }: { orderId: string }) => {
   const stripe = useStripe();
@@ -131,14 +134,13 @@ export default function Payment() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: order, isLoading: orderLoading } = useQuery({
-    queryKey: ["/api/orders", orderId],
+    queryKey: [`/api/orders/${orderId}`],
     enabled: !!orderId && isAuthenticated,
   });
 
   useEffect(() => {
     if (order && !clientSecret) {
       apiRequest("POST", "/api/create-payment-intent", { 
-        amount: parseFloat((order as any).totalAmount), 
         orderId: (order as any).id 
       })
         .then((res) => res.json())

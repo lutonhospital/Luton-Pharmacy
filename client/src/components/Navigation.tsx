@@ -11,16 +11,16 @@ import {
 import type { User } from "@shared/schema";
 
 interface NavigationProps {
-  user: User;
+  user?: User;
 }
 
 export default function Navigation({ user }: NavigationProps) {
   const [currentView, setCurrentView] = useState<'patient' | 'staff'>(
-    user.role === 'pharmacist' || user.role === 'admin' ? 'staff' : 'patient'
+    user?.role === 'pharmacist' || user?.role === 'admin' ? 'staff' : 'patient'
   );
 
-  const isStaff = user.role === 'pharmacist' || user.role === 'admin';
-  const userInitials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` || 'U';
+  const isStaff = user?.role === 'pharmacist' || user?.role === 'admin';
+  const userInitials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` || 'U' : 'G';
 
   return (
     <div className="bg-card border-b border-border">
@@ -34,52 +34,63 @@ export default function Navigation({ user }: NavigationProps) {
           </div>
           
           <div className="flex items-center space-x-4">
-            {isStaff && (
-              <div className="bg-secondary rounded-lg p-1 flex">
-                <Button
-                  variant={currentView === 'patient' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setCurrentView('patient')}
-                  className={currentView === 'patient' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
-                  data-testid="button-patient-view"
-                >
-                  Patient View
+            {user ? (
+              <>
+                {isStaff && (
+                  <div className="bg-secondary rounded-lg p-1 flex">
+                    <Button
+                      variant={currentView === 'patient' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setCurrentView('patient')}
+                      className={currentView === 'patient' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
+                      data-testid="button-patient-view"
+                    >
+                      Patient View
+                    </Button>
+                    <Button
+                      variant={currentView === 'staff' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setCurrentView('staff')}
+                      className={currentView === 'staff' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
+                      data-testid="button-staff-view"
+                    >
+                      Staff Dashboard
+                    </Button>
+                  </div>
+                )}
+                
+                <Button variant="ghost" size="icon" data-testid="button-notifications">
+                  <Bell className="h-5 w-5" />
                 </Button>
-                <Button
-                  variant={currentView === 'staff' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setCurrentView('staff')}
-                  className={currentView === 'staff' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
-                  data-testid="button-staff-view"
-                >
-                  Staff Dashboard
-                </Button>
-              </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.profileImageUrl || undefined} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium">{user.firstName} {user.lastName}</span>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => window.location.href = '/api/logout'}>
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <Button 
+                onClick={() => window.location.href = '/api/login'}
+                data-testid="button-login"
+              >
+                Login
+              </Button>
             )}
-            
-            <Button variant="ghost" size="icon" data-testid="button-notifications">
-              <Bell className="h-5 w-5" />
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.profileImageUrl || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium">{user.firstName} {user.lastName}</span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => window.location.href = '/api/logout'}>
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </div>

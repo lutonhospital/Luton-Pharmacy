@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Payment from "@/pages/Payment";
+import Shop from "@/pages/Shop";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -14,11 +15,11 @@ function Router() {
 
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
+      <Route path="/" component={Shop} />
+      <Route path="/landing" component={Landing} />
+      {isAuthenticated && (
         <>
-          <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/payment/:orderId" component={Payment} />
         </>
       )}

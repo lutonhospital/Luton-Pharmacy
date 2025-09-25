@@ -7,12 +7,21 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema } from "@shared/schema";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+// Use testing Stripe key if available, otherwise use production key
+const stripeSecretKey = process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
+
+console.log('Stripe key configuration:', {
+  hasTesting: !!process.env.TESTING_STRIPE_SECRET_KEY,
+  hasProduction: !!process.env.STRIPE_SECRET_KEY,
+  usingKey: stripeSecretKey ? 'key loaded' : 'none'
+});
+
+if (!stripeSecretKey) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY or TESTING_STRIPE_SECRET_KEY');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-08-27.basil",
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: "2024-06-20",
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -136,6 +145,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching orders:", error);
       res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  });
+
+  app.get('/api/orders/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const order = await storage.getOrder(id);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Ensure user can only access their own orders (unless they're staff)
+      const user = await storage.getUser(userId);
+      if (user?.role !== 'pharmacist' && user?.role !== 'admin' && order.patientId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      res.status(500).json({ message: "Failed to fetch order" });
     }
   });
 
@@ -275,16 +308,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Payment routes
   app.post("/api/create-payment-intent", isAuthenticated, async (req: any, res) => {
     try {
-      const { amount, orderId } = req.body;
+      const { orderId } = req.body;
+      const userId = req.user.claims.sub;
       
+      if (!orderId) {
+        return res.status(400).json({ message: "Order ID is required" });
+      }
+
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Verify user owns this order (unless they're staff)
+      const user = await storage.getUser(userId);
+      if (user?.role !== 'pharmacist' && user?.role !== 'admin' && order.patientId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Convert GBP to pence (smallest currency unit)
+      const amountInPence = Math.round(parseFloat(order.totalAmount) * 100);
+
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
+        amount: amountInPence,
         currency: "gbp",
         metadata: {
-          orderId: orderId,
+          orderId: order.id,
         },
       });
-      
+
       res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error: any) {
       console.error("Error creating payment intent:", error);
@@ -325,6 +377,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error confirming payment:", error);
       res.status(500).json({ message: "Error confirming payment: " + error.message });
+    }
+  });
+
+  // Shop product routes
+  app.get("/api/products", async (req, res) => {
+    try {
+      const { category, search } = req.query;
+      let products;
+
+      if (search) {
+        products = await storage.searchProducts(search as string);
+      } else if (category && category !== "all") {
+        products = await storage.getProductsByCategory(category as string);
+      } else {
+        products = await storage.getActiveProducts();
+      }
+
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/products/:category", async (req, res) => {
+    try {
+      const { category } = req.params;
+      const { search } = req.query;
+      
+      let products;
+      if (search) {
+        products = await storage.searchProducts(search as string);
+      } else if (category === "all") {
+        products = await storage.getActiveProducts();
+      } else {
+        products = await storage.getProductsByCategory(category);
+      }
+
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  // Shopping cart routes
+  app.get("/api/cart", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const cartItems = await storage.getUserCart(userId);
+      
+      // Fetch product details for each cart item
+      const enrichedCartItems = await Promise.all(
+        cartItems.map(async (item) => {
+          const products = await storage.getActiveProducts();
+          const product = products.find(p => p.id === item.inventoryId);
+          return { ...item, product };
+        })
+      );
+
+      res.json(enrichedCartItems);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      res.status(500).json({ message: "Failed to fetch cart" });
+    }
+  });
+
+  app.post("/api/cart", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { inventoryId, quantity } = req.body;
+
+      const cartItem = await storage.addToCart({
+        userId,
+        inventoryId,
+        quantity: quantity || 1,
+      });
+
+      res.json(cartItem);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ message: "Failed to add to cart" });
+    }
+  });
+
+  app.patch("/api/cart/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { quantity } = req.body;
+
+      const cartItem = await storage.updateCartItem(id, quantity);
+      res.json(cartItem);
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ message: "Failed to update cart item" });
+    }
+  });
+
+  app.delete("/api/cart/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.removeFromCart(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing from cart:", error);
+      res.status(500).json({ message: "Failed to remove from cart" });
     }
   });
 

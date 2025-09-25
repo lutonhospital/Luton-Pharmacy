@@ -6,6 +6,9 @@ import {
   orderItems,
   inventory,
   notifications,
+  consultations,
+  prescriptionUploads,
+  shoppingCart,
   type User,
   type UpsertUser,
   type AuthUpsertUser,
@@ -21,6 +24,12 @@ import {
   type InsertInventory,
   type Notification,
   type InsertNotification,
+  type Consultation,
+  type InsertConsultation,
+  type PrescriptionUpload,
+  type InsertPrescriptionUpload,
+  type ShoppingCart,
+  type InsertShoppingCart,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, count, sql } from "drizzle-orm";
@@ -68,6 +77,30 @@ export interface IStorage {
   getUserNotifications(userId: string): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationRead(id: string): Promise<void>;
+
+  // Shopping cart operations
+  getUserCart(userId: string): Promise<ShoppingCart[]>;
+  addToCart(item: InsertShoppingCart): Promise<ShoppingCart>;
+  updateCartItem(id: string, quantity: number): Promise<ShoppingCart>;
+  removeFromCart(id: string): Promise<void>;
+  clearCart(userId: string): Promise<void>;
+
+  // Consultation operations
+  getConsultations(userId: string): Promise<Consultation[]>;
+  createConsultation(consultation: InsertConsultation): Promise<Consultation>;
+  updateConsultationStatus(id: string, status: string, notes?: string): Promise<Consultation>;
+  getPendingConsultations(): Promise<Consultation[]>;
+
+  // Prescription upload operations
+  getUserPrescriptionUploads(userId: string): Promise<PrescriptionUpload[]>;
+  createPrescriptionUpload(upload: InsertPrescriptionUpload): Promise<PrescriptionUpload>;
+  updatePrescriptionUploadStatus(id: string, status: string, notes?: string): Promise<PrescriptionUpload>;
+  getPendingPrescriptionUploads(): Promise<PrescriptionUpload[]>;
+
+  // Enhanced inventory operations for shop
+  getActiveProducts(category?: string): Promise<Inventory[]>;
+  searchProducts(query: string): Promise<Inventory[]>;
+  getProductsByCategory(category: string): Promise<Inventory[]>;
 
   // Analytics
   getDashboardStats(userId: string, role: string): Promise<any>;
@@ -454,6 +487,173 @@ export class DatabaseStorage implements IStorage {
         stockAlerts: lowStockItems.length,
       };
     }
+  }
+
+  // Shopping cart operations
+  async getUserCart(userId: string): Promise<ShoppingCart[]> {
+    return await db
+      .select()
+      .from(shoppingCart)
+      .where(eq(shoppingCart.userId, userId))
+      .orderBy(desc(shoppingCart.createdAt));
+  }
+
+  async addToCart(item: InsertShoppingCart): Promise<ShoppingCart> {
+    // Check if item already exists in cart
+    const [existingItem] = await db
+      .select()
+      .from(shoppingCart)
+      .where(and(
+        eq(shoppingCart.userId, item.userId),
+        eq(shoppingCart.inventoryId, item.inventoryId)
+      ));
+
+    if (existingItem) {
+      // Update quantity
+      const [updatedItem] = await db
+        .update(shoppingCart)
+        .set({
+          quantity: existingItem.quantity + item.quantity,
+          updatedAt: new Date()
+        })
+        .where(eq(shoppingCart.id, existingItem.id))
+        .returning();
+      return updatedItem;
+    } else {
+      // Add new item
+      const [newItem] = await db
+        .insert(shoppingCart)
+        .values(item)
+        .returning();
+      return newItem;
+    }
+  }
+
+  async updateCartItem(id: string, quantity: number): Promise<ShoppingCart> {
+    const [updatedItem] = await db
+      .update(shoppingCart)
+      .set({ quantity, updatedAt: new Date() })
+      .where(eq(shoppingCart.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async removeFromCart(id: string): Promise<void> {
+    await db.delete(shoppingCart).where(eq(shoppingCart.id, id));
+  }
+
+  async clearCart(userId: string): Promise<void> {
+    await db.delete(shoppingCart).where(eq(shoppingCart.userId, userId));
+  }
+
+  // Consultation operations
+  async getConsultations(userId: string): Promise<Consultation[]> {
+    return await db
+      .select()
+      .from(consultations)
+      .where(eq(consultations.patientId, userId))
+      .orderBy(desc(consultations.scheduledDate));
+  }
+
+  async createConsultation(consultation: InsertConsultation): Promise<Consultation> {
+    const [newConsultation] = await db
+      .insert(consultations)
+      .values(consultation)
+      .returning();
+    return newConsultation;
+  }
+
+  async updateConsultationStatus(id: string, status: string, notes?: string): Promise<Consultation> {
+    const updateData: any = { status, updatedAt: new Date() };
+    if (notes) updateData.notes = notes;
+
+    const [updatedConsultation] = await db
+      .update(consultations)
+      .set(updateData)
+      .where(eq(consultations.id, id))
+      .returning();
+    return updatedConsultation;
+  }
+
+  async getPendingConsultations(): Promise<Consultation[]> {
+    return await db
+      .select()
+      .from(consultations)
+      .where(eq(consultations.status, "scheduled"))
+      .orderBy(asc(consultations.scheduledDate));
+  }
+
+  // Prescription upload operations
+  async getUserPrescriptionUploads(userId: string): Promise<PrescriptionUpload[]> {
+    return await db
+      .select()
+      .from(prescriptionUploads)
+      .where(eq(prescriptionUploads.patientId, userId))
+      .orderBy(desc(prescriptionUploads.createdAt));
+  }
+
+  async createPrescriptionUpload(upload: InsertPrescriptionUpload): Promise<PrescriptionUpload> {
+    const [newUpload] = await db
+      .insert(prescriptionUploads)
+      .values(upload)
+      .returning();
+    return newUpload;
+  }
+
+  async updatePrescriptionUploadStatus(id: string, status: string, notes?: string): Promise<PrescriptionUpload> {
+    const updateData: any = { status, processedAt: new Date() };
+    if (notes) updateData.notes = notes;
+
+    const [updatedUpload] = await db
+      .update(prescriptionUploads)
+      .set(updateData)
+      .where(eq(prescriptionUploads.id, id))
+      .returning();
+    return updatedUpload;
+  }
+
+  async getPendingPrescriptionUploads(): Promise<PrescriptionUpload[]> {
+    return await db
+      .select()
+      .from(prescriptionUploads)
+      .where(eq(prescriptionUploads.status, "pending"))
+      .orderBy(asc(prescriptionUploads.createdAt));
+  }
+
+  // Enhanced inventory operations for shop
+  async getActiveProducts(category?: string): Promise<Inventory[]> {
+    let query = db
+      .select()
+      .from(inventory)
+      .where(eq(inventory.isActive, true));
+    
+    if (category) {
+      query = query.where(eq(inventory.category, category));
+    }
+    
+    return await query.orderBy(asc(inventory.medicationName));
+  }
+
+  async searchProducts(searchQuery: string): Promise<Inventory[]> {
+    return await db
+      .select()
+      .from(inventory)
+      .where(and(
+        eq(inventory.isActive, true),
+        sql`${inventory.medicationName} ILIKE ${'%' + searchQuery + '%'}`
+      ))
+      .orderBy(asc(inventory.medicationName));
+  }
+
+  async getProductsByCategory(category: string): Promise<Inventory[]> {
+    return await db
+      .select()
+      .from(inventory)
+      .where(and(
+        eq(inventory.isActive, true),
+        eq(inventory.category, category)
+      ))
+      .orderBy(asc(inventory.medicationName));
   }
 }
 
