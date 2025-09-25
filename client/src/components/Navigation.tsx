@@ -89,12 +89,8 @@ export default function Navigation({ user }: NavigationProps) {
             {/* Logo and Location */}
             <div className="flex items-center space-x-6">
               <Link href="/">
-                <div className="flex items-center space-x-2 cursor-pointer">
+                <div className="cursor-pointer">
                   <img src={logoPath} alt="Luton Hospital Logo" className="h-12 w-auto" />
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900">Luton Hospital</h1>
-                    <p className="text-sm text-gray-600">Online Pharmacy</p>
-                  </div>
                 </div>
               </Link>
               
