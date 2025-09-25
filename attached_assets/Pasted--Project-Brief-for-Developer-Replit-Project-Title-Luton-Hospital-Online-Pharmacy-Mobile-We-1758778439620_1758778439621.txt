@@ -1,0 +1,127 @@
+📌 Project Brief for Developer (Replit)
+
+Project Title:
+Luton Hospital Online Pharmacy – Mobile & Web App
+
+1️⃣ Project Overview
+
+We need a cross-platform online pharmacy application for Luton Hospital that will be available on:
+
+Android (Google Play Store)
+
+iOS (Apple App Store)
+
+Web (browser-based app)
+
+The app will allow patients to:
+
+View active and past prescriptions
+
+Request prescription refills
+
+Pay for medications (M-Pesa, card payments, etc.)
+
+Choose pickup at the hospital pharmacy OR request delivery
+
+Track prescription status (pending, dispensed, ready for pickup/delivery)
+
+Get notifications when prescriptions are ready
+
+Chat or send messages to pharmacy staff (optional)
+
+Hospital & pharmacy staff should be able to:
+
+Manage prescriptions and approvals
+
+View stock levels
+
+Update order status
+
+Manage patient communication
+
+2️⃣ Core Features
+Patient Side (App + Web)
+
+✅ Secure login (email/phone + password, with OTP option)
+✅ View prescriptions (active & history)
+✅ Request refill / renewal
+✅ Order medicines online (search by name or upload prescription photo)
+✅ Payment gateway integration (M-Pesa, card, bank transfer)
+✅ Delivery or pickup selection
+✅ Notifications (push, SMS, email) for order status
+✅ Profile management (personal details, address, medical info)
+✅ Live chat/helpdesk (optional)
+
+Pharmacy/Admin Dashboard (Web)
+
+✅ Login for staff with role-based access
+✅ View and approve prescriptions
+✅ Update stock availability
+✅ Process orders and update status
+✅ Generate reports (sales, orders, inventory)
+✅ Manage users (patients, staff)
+✅ Secure audit logs
+
+3️⃣ Technical Requirements
+
+Tech Stack:
+
+Frontend: React Native (for Android & iOS), React (for Web)
+
+Backend: Node.js or Django REST API
+
+Database: PostgreSQL or MySQL (secure, HIPAA/GDPR compliant)
+
+Hosting: Cloud-based (AWS, Azure, or Render)
+
+Authentication: OAuth2 / JWT, encrypted passwords
+
+Notifications: Firebase Push Notifications + Email/SMS API
+
+Security:
+
+All data must be encrypted in transit (HTTPS/TLS)
+
+GDPR-compliant storage of patient data
+
+Role-based access control for staff/admins
+
+Full audit logging of prescription handling
+
+Deployment:
+
+Play Store & App Store submission
+
+Web app deployed with custom hospital domain
+
+CI/CD pipeline for updates
+
+4️⃣ Deliverables
+
+Functional mobile app (Android & iOS)
+
+Fully responsive web app
+
+Admin dashboard
+
+Secure backend with database & APIs
+
+Documentation (API docs, deployment guide)
+
+User guide (for staff & patients)
+
+Support for hospital team during first month after launch
+
+5️⃣ Timeline & Milestones
+
+Week 1–2: Requirement confirmation & UI/UX design mockups
+
+Week 3–6: Backend + API development
+
+Week 7–9: Mobile & web frontend development
+
+Week 10: Testing (functional, security, user testing)
+
+Week 11: Deployment to Play Store, App Store, and web domain
+
+Week 12: Training & go-live
