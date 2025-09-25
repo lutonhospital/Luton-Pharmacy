@@ -142,6 +142,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prescription Upload routes
+  app.get('/api/prescription-uploads', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      let uploads;
+      if (user?.role === 'pharmacist' || user?.role === 'admin') {
+        // Staff can see all pending uploads
+        uploads = await storage.getPendingPrescriptionUploads();
+      } else {
+        // Patients can only see their own uploads
+        uploads = await storage.getUserPrescriptionUploads(userId);
+      }
+      
+      res.json(uploads);
+    } catch (error) {
+      console.error("Error fetching prescription uploads:", error);
+      res.status(500).json({ message: "Failed to fetch prescription uploads" });
+    }
+  });
+
+  app.post('/api/prescription-uploads', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Validate request body using shared schema
+      const validationResult = insertPrescriptionUploadSchema.safeParse({
+        patientId: userId,
+        fileName: req.body.fileName,
+        fileUrl: req.body.fileUrl || `https://storage.lutonhospital.co.ke/prescriptions/${userId}/${Date.now()}-${req.body.fileName}`,
+        notes: req.body.notes || null,
+        status: "pending"
+      });
+
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request data",
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const upload = await storage.createPrescriptionUpload(validationResult.data);
+      
+      res.json(upload);
+    } catch (error) {
+      console.error("Error creating prescription upload:", error);
+      res.status(500).json({ message: "Failed to upload prescription" });
+    }
+  });
+
+  app.patch('/api/prescription-uploads/:id/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'pharmacist' && user?.role !== 'admin') {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      const { status, notes } = req.body;
+      
+      const upload = await storage.updatePrescriptionUploadStatus(id, status, notes);
+      
+      res.json(upload);
+    } catch (error) {
+      console.error("Error updating prescription upload status:", error);
+      res.status(500).json({ message: "Failed to update prescription upload status" });
+    }
+  });
+
   // Order routes
   app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
