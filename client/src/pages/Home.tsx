@@ -372,11 +372,11 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentBanner, setCurrentBanner] = useState(0);
 
-  // Fetch 12 random products for Featured Medicines section
+  // Fetch 6 random products for Featured Medicines section
   const { data: featuredMedicines, isLoading: medicinesLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products", { limit: 12, random: true }],
+    queryKey: ["/api/products", { limit: 6, random: true }],
     queryFn: async () => {
-      const response = await fetch("/api/products?limit=12&random=true");
+      const response = await fetch("/api/products?limit=6&random=true");
       if (!response.ok) throw new Error("Failed to fetch featured medicines");
       return response.json();
     },
@@ -533,7 +533,7 @@ export default function Home() {
                       <p className="text-lg mb-4">{banner.description}</p>
                       <Link href={banner.link}>
                         <Button variant="secondary" data-testid={`button-banner-${banner.id}`}>
-                          Shop Now
+                          {banner.id === 3 ? "Upload Prescription" : "Shop Now"}
                         </Button>
                       </Link>
                     </div>
@@ -572,7 +572,7 @@ export default function Home() {
           </div>
           {medicinesLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {Array.from({ length: 12 }).map((_, index) => (
+              {Array.from({ length: 6 }).map((_, index) => (
                 <div key={index} className="animate-pulse">
                   <div className="bg-gray-200 h-32 rounded-lg mb-3"></div>
                   <div className="bg-gray-200 h-4 rounded mb-2"></div>

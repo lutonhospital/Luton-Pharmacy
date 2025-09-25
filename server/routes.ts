@@ -642,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Shop product routes
   app.get("/api/products", async (req, res) => {
     try {
-      const { category, search } = req.query;
+      const { category, search, limit, random } = req.query;
       let products;
 
       if (search) {
@@ -651,6 +651,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         products = await storage.getProductsByCategory(category as string);
       } else {
         products = await storage.getActiveProducts();
+      }
+
+      // Handle limit and random parameters
+      if (products && limit) {
+        const limitNum = parseInt(limit as string);
+        if (!isNaN(limitNum) && limitNum > 0) {
+          if (random === "true") {
+            // Shuffle array and take limited number
+            products = [...products].sort(() => Math.random() - 0.5).slice(0, limitNum);
+          } else {
+            // Just take limited number
+            products = products.slice(0, limitNum);
+          }
+        }
       }
 
       res.json(products);
