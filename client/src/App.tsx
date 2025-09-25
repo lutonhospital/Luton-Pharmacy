@@ -14,6 +14,7 @@ import News from "@/pages/News";
 import PrescriptionUpload from "@/pages/PrescriptionUpload";
 import Consultation from "@/pages/Consultation";
 import AdminProducts from "@/pages/AdminProducts";
+import AdminImport from "@/pages/AdminImport";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Payment from "@/pages/Payment";
@@ -41,6 +42,9 @@ function Router() {
               <Route path="/payment/:orderId" component={Payment} />
               {(user?.role === 'admin' || user?.role === 'pharmacist') && (
                 <Route path="/admin/products" component={AdminProducts} />
+              )}
+              {user?.role === 'admin' && (
+                <Route path="/admin/import" component={AdminImport} />
               )}
             </>
           )}

@@ -725,6 +725,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CSV Import endpoint for pharmaceutical products
+  app.post("/api/admin/import-products", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied. Admin role required." });
+      }
+
+      const { csvData } = req.body;
+      if (!csvData || !Array.isArray(csvData)) {
+        return res.status(400).json({ message: "Invalid CSV data format" });
+      }
+
+      const results = {
+        imported: 0,
+        errors: [] as any[],
+        skipped: 0
+      };
+
+      // Helper function to clean price and convert to decimal
+      const cleanPrice = (priceStr: string): number => {
+        if (!priceStr || priceStr === '0') return 0;
+        // Remove commas and quotes, parse as float
+        const cleaned = priceStr.replace(/[",]/g, '');
+        const price = parseFloat(cleaned);
+        return isNaN(price) ? 0 : price;
+      };
+
+      // Helper function to map category
+      const mapCategory = (collection: string): string => {
+        const collectionLower = (collection || '').toLowerCase();
+        // Map to our predefined categories
+        if (collectionLower.includes('vitamin') || collectionLower.includes('supplement')) {
+          return 'vitamins_supplements';
+        }
+        if (collectionLower.includes('prescription') || collectionLower.includes('rx')) {
+          return 'prescription_medicines';
+        }
+        if (collectionLower.includes('first aid') || collectionLower.includes('emergency')) {
+          return 'first_aid';
+        }
+        if (collectionLower.includes('baby') || collectionLower.includes('infant')) {
+          return 'baby_care';
+        }
+        if (collectionLower.includes('device') || collectionLower.includes('equipment')) {
+          return 'medical_devices';
+        }
+        if (collectionLower.includes('personal') || collectionLower.includes('hygiene')) {
+          return 'personal_care';
+        }
+        // Default to over the counter
+        return 'over_the_counter';
+      };
+
+      // Helper function to extract dosage from product name
+      const extractDosage = (productName: string): string => {
+        // Look for common dosage patterns like "100MG", "500mg", "2.5ML", etc.
+        const dosageMatch = productName.match(/(\d+(?:\.\d+)?)\s?(mg|ml|g|mcg|iu|cc|%)/i);
+        return dosageMatch ? dosageMatch[0] : 'N/A';
+      };
+
+      // Process each row
+      for (const row of csvData) {
+        try {
+          const extrenalId = row['Extrenal ID'] || row['External_ID'] || row['External ID'];
+          const productName = row['Product_Name'] || row['Product Name'];
+          const price = row['Price'];
+          const image = row['Image'];
+          const description = row['Description'];
+          const collection = row['Collection'] || row['SuperCollection'];
+
+          // Skip if essential fields are missing
+          if (!productName || !price) {
+            results.skipped++;
+            continue;
+          }
+
+          const inventoryItem = {
+            medicationName: productName.trim(),
+            dosage: extractDosage(productName),
+            description: description?.trim() || '',
+            category: mapCategory(collection),
+            imageUrl: image || 'https://i.postimg.cc/s24h1HsW/pharma-1.png',
+            isActive: true,
+            requiresPrescription: false,
+            currentStock: 100, // Default stock
+            minimumStock: 10,
+            unitPrice: cleanPrice(price),
+            originalPrice: cleanPrice(price),
+            supplier: 'Luton Hospital',
+          };
+
+          await storage.createInventoryItem(inventoryItem);
+          results.imported++;
+
+        } catch (error: any) {
+          results.errors.push({
+            row: row,
+            error: error.message
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Import completed. ${results.imported} products imported, ${results.skipped} skipped.`,
+        results
+      });
+
+    } catch (error) {
+      console.error("Error importing products:", error);
+      res.status(500).json({ message: "Failed to import products" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
