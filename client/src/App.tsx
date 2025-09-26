@@ -30,6 +30,9 @@ import Cart from "@/pages/Cart";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Payment from "@/pages/Payment";
+import Profile from "@/pages/Profile";
+import Orders from "@/pages/Orders";
+import Prescriptions from "@/pages/Prescriptions";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -71,6 +74,9 @@ function Router() {
           {isAuthenticated && (
             <>
               <Route path="/dashboard" component={Dashboard} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/orders" component={Orders} />
+              <Route path="/prescriptions" component={Prescriptions} />
               <Route path="/payment/:orderId" component={Payment} />
             </>
           )}
