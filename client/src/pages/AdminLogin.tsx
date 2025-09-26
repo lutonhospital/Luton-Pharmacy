@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Shield, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
 export default function AdminLogin() {
@@ -26,7 +26,15 @@ export default function AdminLogin() {
         title: "Login Successful",
         description: "Welcome to Luton Hospital Admin Dashboard",
       });
-      setLocation("/admin");
+      
+      // Invalidate queries and force refetch
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/auth/user"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/auth/user"] });
+      
+      // Wait for authentication state to update before redirecting
+      setTimeout(() => {
+        setLocation("/admin");
+      }, 500);
     },
     onError: (error: any) => {
       toast({

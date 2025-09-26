@@ -232,9 +232,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password are required" });
       }
 
-      // Simple working credentials for testing
-      const validUsername = "admin";
-      const validPassword = "luton123";
+      // Check credentials against environment variables (fallback to hardcoded for now)
+      const validUsername = process.env.ADMIN_USERNAME || "admin";
+      const validPassword = process.env.ADMIN_PASSWORD || "luton123";
       
       // Check credentials
       if (username !== validUsername || password !== validPassword) {

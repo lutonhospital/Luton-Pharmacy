@@ -76,6 +76,8 @@ function Router() {
               <Route path="/admin/orders" component={AdminOrderManagement} />
               <Route path="/admin/prescriptions" component={AdminPrescriptionVerification} />
               <Route path="/admin/products" component={AdminProducts} />
+              <Route path="/admin/products/add" component={AdminProducts} />
+              <Route path="/admin/consultations" component={Consultation} />
               <Route path="/admin/import" component={AdminImport} />
             </>
           )}
