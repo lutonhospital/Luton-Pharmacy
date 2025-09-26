@@ -34,7 +34,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ user }: NavigationProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("Nairobi, Kenya");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -209,7 +209,7 @@ export default function Navigation({ user }: NavigationProps) {
               ) : (
                 <Button 
                   variant="ghost" 
-                  onClick={() => window.location.href = '/api/login'}
+                  onClick={() => setLocation('/login')}
                   className="flex items-center space-x-2"
                   data-testid="button-login"
                 >

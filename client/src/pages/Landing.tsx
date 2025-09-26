@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Hospital, Shield, Clock, Smartphone } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -14,7 +16,7 @@ export default function Landing() {
               <h1 className="text-xl font-semibold text-foreground">Luton Hospital Pharmacy</h1>
             </div>
             <Button 
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => setLocation('/login')}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
               data-testid="button-login"
             >
@@ -36,7 +38,7 @@ export default function Landing() {
           </p>
           <Button 
             size="lg" 
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => setLocation('/login')}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             data-testid="button-get-started"
           >
@@ -128,7 +130,7 @@ export default function Landing() {
           </p>
           <Button 
             size="lg" 
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => setLocation('/login')}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             data-testid="button-login-cta"
           >

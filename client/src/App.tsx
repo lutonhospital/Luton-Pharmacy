@@ -20,6 +20,8 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import AdminOrderManagement from "@/pages/AdminOrderManagement";
 import AdminPrescriptionVerification from "@/pages/AdminPrescriptionVerification";
 import AdminLogin from "@/pages/AdminLogin";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Payment from "@/pages/Payment";
@@ -44,6 +46,8 @@ function Router() {
           <Route path="/prescription-upload" component={PrescriptionUpload} />
           <Route path="/consultation" component={Consultation} />
           <Route path="/landing" component={Landing} />
+          <Route path="/login" component={Login} />
+          <Route path="/signup" component={Signup} />
 
           {/* Admin login route - accessible without authentication */}
           <Route path="/admin/login" component={AdminLogin} />
