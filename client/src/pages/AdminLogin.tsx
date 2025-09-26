@@ -18,8 +18,15 @@ export default function AdminLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
+      console.log('LoginMutation called with:', { username: credentials.username, password: '[REDACTED]' });
+      console.log('Making API request to /api/admin/login...');
+      
       const response = await apiRequest("POST", "/api/admin/login", credentials);
-      return await response.json();
+      console.log('API response received:', response.status, response.statusText);
+      
+      const result = await response.json();
+      console.log('API response JSON:', result);
+      return result;
     },
     onSuccess: () => {
       toast({
@@ -39,7 +46,11 @@ export default function AdminLogin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('=== FRONTEND LOGIN DEBUG ===');
+    console.log('Form submitted with:', { username, password: password ? '[PASSWORD PROVIDED]' : 'NO PASSWORD' });
+    
     if (!username || !password) {
+      console.log('Missing credentials detected');
       toast({
         title: "Missing Credentials",
         description: "Please enter both username and password",
@@ -47,6 +58,8 @@ export default function AdminLogin() {
       });
       return;
     }
+    
+    console.log('About to call loginMutation.mutate with:', { username, password: '[REDACTED]' });
     loginMutation.mutate({ username, password });
   };
 
