@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useCart } from "@/hooks/useCart";
 import { 
   MapPin, 
   Search, 
@@ -38,6 +39,7 @@ export default function Navigation({ user }: NavigationProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("Nairobi, Kenya");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { cartCount, cartTotal } = useCart();
 
   const userInitials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` || 'U' : 'G';
 
@@ -235,12 +237,16 @@ export default function Navigation({ user }: NavigationProps) {
               {/* Cart */}
               <Button variant="ghost" className="relative" data-testid="button-cart">
                 <ShoppingCart className="h-6 w-6 text-gray-600 hover:text-primary" />
-                <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  0
-                </span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
                 <div className="hidden lg:block ml-2">
                   <p className="text-sm font-medium text-gray-700">Cart</p>
-                  <p className="text-xs text-gray-500">KES 0</p>
+                  <p className="text-xs text-gray-500">
+                    {user ? `KES ${cartTotal.toFixed(2)}` : `${cartCount} items`}
+                  </p>
                 </div>
               </Button>
             </div>

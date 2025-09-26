@@ -135,23 +135,35 @@ export default function Shop() {
     }, 0) || 0;
   };
 
-  const handleAddToCart = (product: Product) => {
-    if (!user) {
+  const handleAddToCart = async (product: Product) => {
+    try {
+      if (user) {
+        // Use authenticated cart
+        addToCartMutation.mutate({
+          inventoryId: product.id,
+          quantity: 1,
+        });
+      } else {
+        // Use guest cart (localStorage)
+        const { CartUtils } = await import("@/lib/cartUtils");
+        CartUtils.addToGuestCart(product.id, 1);
+        
+        toast({
+          title: "Added to Cart",
+          description: "Item added to your cart. Login during checkout to complete your order.",
+        });
+        
+        // Trigger a state update to refresh cart count if needed
+        window.dispatchEvent(new CustomEvent('guestCartUpdated'));
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
       toast({
-        title: "Please Login",
-        description: "You need to login to add items to your cart",
+        title: "Error",
+        description: "Failed to add item to cart. Please try again.",
         variant: "destructive",
       });
-      setTimeout(() => {
-        setLocation("/login");
-      }, 1500);
-      return;
     }
-
-    addToCartMutation.mutate({
-      inventoryId: product.id,
-      quantity: 1,
-    });
   };
 
   if (authLoading) {
