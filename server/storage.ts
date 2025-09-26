@@ -583,7 +583,7 @@ export class DatabaseStorage implements IStorage {
       const [updatedItem] = await db
         .update(shoppingCart)
         .set({
-          quantity: existingItem.quantity + item.quantity,
+          quantity: (existingItem.quantity || 0) + (item.quantity || 0),
           updatedAt: new Date()
         })
         .where(eq(shoppingCart.id, existingItem.id))
@@ -698,7 +698,7 @@ export class DatabaseStorage implements IStorage {
         .from(inventory)
         .where(and(
           eq(inventory.isActive, true),
-          eq(inventory.category, category)
+          sql`${inventory.category} = ${category}`
         ))
         .orderBy(asc(inventory.medicationName));
     }
@@ -727,7 +727,7 @@ export class DatabaseStorage implements IStorage {
       .from(inventory)
       .where(and(
         eq(inventory.isActive, true),
-        eq(inventory.category, category)
+        sql`${inventory.category} = ${category}`
       ))
       .orderBy(asc(inventory.medicationName));
   }
@@ -737,7 +737,7 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db
       .select({ count: count() })
       .from(orders)
-      .where(eq(orders.status, status));
+      .where(sql`${orders.status} = ${status}`);
     return result.count;
   }
 
@@ -963,15 +963,11 @@ export class DatabaseStorage implements IStorage {
     const [newUser] = await db
       .insert(users)
       .values({
-        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email: userData.email,
         password: userData.password,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
-        role: userData.role,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        role: userData.role as "patient" | "pharmacist" | "admin" | "super_admin"
       })
       .returning();
     return newUser;
@@ -981,8 +977,11 @@ export class DatabaseStorage implements IStorage {
     const [updatedUser] = await db
       .update(users)
       .set({
-        ...data,
-        updatedAt: new Date()
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role as "patient" | "pharmacist" | "admin" | "super_admin" | undefined
       })
       .where(eq(users.id, id))
       .returning();
