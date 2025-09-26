@@ -4,7 +4,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Home from "@/pages/Home";
@@ -16,6 +15,7 @@ import News from "@/pages/News";
 import PrescriptionUpload from "@/pages/PrescriptionUpload";
 import Consultation from "@/pages/Consultation";
 import AdminProducts from "@/pages/AdminProducts";
+import AdminUserManagement from "@/pages/AdminUserManagement";
 import AdminImport from "@/pages/AdminImport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminOrderManagement from "@/pages/AdminOrderManagement";
@@ -34,7 +34,12 @@ import NotFound from "@/pages/not-found";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const { user: adminUser, isAuthenticated: isAdminAuthenticated, isAdmin } = useAdminAuth();
+  
+  // Check if user has admin access (admin, pharmacist, or super_admin)
+  const hasAdminAccess = isAuthenticated && user && user.role && ['admin', 'pharmacist', 'super_admin'].includes(user.role);
+  
+  // Check if user has super admin access
+  const isSuperAdmin = isAuthenticated && user && user.role === 'super_admin';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -71,7 +76,7 @@ function Router() {
           )}
 
           {/* Admin routes - require admin authentication */}
-          {isAdminAuthenticated && isAdmin && (
+          {hasAdminAccess && (
             <>
               <Route path="/admin" component={AdminDashboard} />
               <Route path="/admin/dashboard" component={AdminDashboard} />
@@ -79,6 +84,7 @@ function Router() {
               <Route path="/admin/prescriptions" component={AdminPrescriptionVerification} />
               <Route path="/admin/products" component={AdminProducts} />
               <Route path="/admin/products/add" component={AdminProducts} />
+              {isSuperAdmin && <Route path="/admin/users" component={AdminUserManagement} />}
               <Route path="/admin/consultations" component={Consultation} />
               <Route path="/admin/import" component={AdminImport} />
             </>

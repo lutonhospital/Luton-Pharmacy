@@ -27,7 +27,7 @@ export const sessions = pgTable(
 );
 
 // User role enum
-export const userRoleEnum = pgEnum("user_role", ["patient", "pharmacist", "admin"]);
+export const userRoleEnum = pgEnum("user_role", ["patient", "pharmacist", "admin", "super_admin"]);
 
 // Prescription status enum
 export const prescriptionStatusEnum = pgEnum("prescription_status", [

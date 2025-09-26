@@ -41,6 +41,12 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   upsertAuthUser(user: AuthUpsertUser): Promise<User>;
   updateUserStripeInfo(userId: string, customerId: string, subscriptionId?: string): Promise<User>;
+  
+  // Admin user management operations
+  getAllUsers(): Promise<Omit<User, 'password'>[]>;
+  createUser(user: { email: string; password: string; firstName?: string | null; lastName?: string | null; role: string }): Promise<User>;
+  updateUser(id: string, data: Partial<{ email: string; password: string; firstName?: string | null; lastName?: string | null; role: string }>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
 
   // Address operations
   getUserAddresses(userId: string): Promise<Address[]>;
@@ -944,6 +950,47 @@ export class DatabaseStorage implements IStorage {
       .where(eq(consultations.id, id))
       .returning();
     return updatedConsultation;
+  }
+
+  // Admin user management implementations
+  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
+    const allUsers = await db.select().from(users).orderBy(asc(users.createdAt));
+    // Remove password field from all users
+    return allUsers.map(({ password, ...user }) => user);
+  }
+
+  async createUser(userData: { email: string; password: string; firstName?: string | null; lastName?: string | null; role: string }): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        role: userData.role,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newUser;
+  }
+
+  async updateUser(id: string, data: Partial<{ email: string; password: string; firstName?: string | null; lastName?: string | null; role: string }>): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 }
 

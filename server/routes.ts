@@ -9,6 +9,23 @@ import { ObjectStorageService } from "./objectStorage";
 import Stripe from "stripe";
 import { z } from "zod";
 import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema, inventory, orders, prescriptions, users, consultations } from "@shared/schema";
+
+// Admin user management validation schemas
+const createUserSchema = z.object({
+  email: z.string().email(),
+  tempPassword: z.string().min(6),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  role: z.enum(['patient', 'pharmacist', 'admin', 'super_admin']).default('pharmacist')
+});
+
+const updateUserSchema = z.object({
+  email: z.string().email().optional(),
+  tempPassword: z.string().min(6).optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  role: z.enum(['patient', 'pharmacist', 'admin', 'super_admin']).optional()
+});
 import { eq, and, like, desc, asc, count, sum, sql, inArray } from 'drizzle-orm';
 import { db } from "./db";
 
@@ -1183,6 +1200,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error searching for public object:", error);
       return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Super Admin User Management Routes
+  
+  // Get all users (super admin only)
+  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Create new user (super admin only)
+  app.post("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+
+      // Validate request body
+      const validationResult = createUserSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid input data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const { email, firstName, lastName, role, tempPassword } = validationResult.data;
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Hash password before storing
+      const bcrypt = await import('bcryptjs');
+      const hashedPassword = await bcrypt.hash(tempPassword, 12);
+
+      const newUser = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        role: role || 'pharmacist'
+      });
+
+      // Remove password from response
+      const { password: _, ...userResponse } = newUser;
+      res.json(userResponse);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  // Update user (super admin only)
+  app.patch("/api/admin/users/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+
+      const { id } = req.params;
+      
+      // Validate request body
+      const validationResult = updateUserSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid input data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const { email, firstName, lastName, role, tempPassword } = validationResult.data;
+
+      const updateData: any = {
+        email,
+        firstName,
+        lastName,
+        role
+      };
+
+      // Hash password if provided
+      if (tempPassword) {
+        const bcrypt = await import('bcryptjs');
+        updateData.password = await bcrypt.hash(tempPassword, 12);
+      }
+
+      const updatedUser = await storage.updateUser(id, updateData);
+
+      // Remove password from response
+      const { password: _, ...userResponse } = updatedUser;
+      res.json(userResponse);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Delete user (super admin only)
+  app.delete("/api/admin/users/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+
+      const { id } = req.params;
+      
+      // Prevent self-deletion
+      if (id === userId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+
+      await storage.deleteUser(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 

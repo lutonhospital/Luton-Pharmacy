@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,31 +85,30 @@ const categories = [
 ];
 
 export default function AdminProducts() {
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Inventory | null>(null);
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
 
-  // Fetch products
-  const { data: products, isLoading } = useQuery<Inventory[]>({
+  // Check if user has admin access
+  const hasAdminAccess = isAuthenticated && user && (user.role === 'admin' || user.role === 'pharmacist' || user.role === 'super_admin');
+
+  // Fetch products - using the same endpoint that shows products in shop
+  const { data: products, isLoading, error } = useQuery<Inventory[]>({
     queryKey: ["/api/admin/products"],
     queryFn: async () => {
-      const response = await fetch("/api/admin/products");
-      if (!response.ok) throw new Error("Failed to fetch products");
+      const response = await apiRequest("GET", "/api/admin/products");
       return response.json();
     },
+    enabled: hasAdminAccess,
   });
 
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
-      const response = await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productData),
-      });
-      if (!response.ok) throw new Error("Failed to create product");
+      const response = await apiRequest("POST", "/api/admin/products", productData);
       return response.json();
     },
     onSuccess: () => {
@@ -133,12 +133,7 @@ export default function AdminProducts() {
   // Update product mutation
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, productData }: { id: string; productData: any }) => {
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productData),
-      });
-      if (!response.ok) throw new Error("Failed to update product");
+      const response = await apiRequest("PATCH", `/api/admin/products/${id}`, productData);
       return response.json();
     },
     onSuccess: () => {
@@ -164,10 +159,7 @@ export default function AdminProducts() {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Failed to delete product");
+      const response = await apiRequest("DELETE", `/api/admin/products/${id}`);
       return response.json();
     },
     onSuccess: () => {
