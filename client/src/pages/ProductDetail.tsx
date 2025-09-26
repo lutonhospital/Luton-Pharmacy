@@ -129,7 +129,7 @@ export default function ProductDetail() {
     } else {
       // Guest user, use local storage cart
       CartUtils.addToGuestCart(product.id, quantity);
-      queryClient.invalidateQueries({ queryKey: ['guest-cart'] });
+      queryClient.invalidateQueries({ queryKey: ['guestCart'] });
       toast({
         title: "Added to cart",
         description: `${quantity} × ${product.medicationName} added to your cart`,
