@@ -1008,6 +1008,189 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Trust Badges and Certifications */}
+      <section className="bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">Your Trusted Healthcare Partner</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div className="flex flex-col items-center" data-testid="trust-badge-licensed">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                <Shield className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Licensed Pharmacy</h3>
+              <p className="text-sm text-gray-600">Certified by Kenya Pharmacy Board</p>
+            </div>
+            <div className="flex flex-col items-center" data-testid="trust-badge-delivery">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                <Truck className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Fast Delivery</h3>
+              <p className="text-sm text-gray-600">Same day delivery in Nairobi</p>
+            </div>
+            <div className="flex flex-col items-center" data-testid="trust-badge-support">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-3">
+                <Clock className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">24/7 Support</h3>
+              <p className="text-sm text-gray-600">Always here for your health needs</p>
+            </div>
+            <div className="flex flex-col items-center" data-testid="trust-badge-consultation">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-3">
+                <Video className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Expert Consultation</h3>
+              <p className="text-sm text-gray-600">Professional pharmacist guidance</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Customer Testimonials */}
+      <section className="bg-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-3">What Our Customers Say</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Hear from real customers about their experience with Luton Hospital Online Pharmacy
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Testimonial 1 */}
+            <div className="bg-gray-50 rounded-lg p-6 shadow-lg" data-testid="testimonial-sarah">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-xl">👩‍💼</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Sarah Wanjiku</h4>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-600 italic">
+                "Excellent service! My medications are always delivered on time, and the pharmacists are very knowledgeable. 
+                I especially appreciate the prescription verification process - it gives me confidence in the quality."
+              </p>
+              <p className="text-sm text-gray-500 mt-3">Verified Customer - Nairobi</p>
+            </div>
+
+            {/* Testimonial 2 */}
+            <div className="bg-gray-50 rounded-lg p-6 shadow-lg" data-testid="testimonial-john">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-xl">👨‍⚕️</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Dr. John Kiprotich</h4>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-600 italic">
+                "As a healthcare professional, I trust Luton Hospital Online Pharmacy for my patients' needs. 
+                Their prescription upload system is seamless, and they maintain high pharmaceutical standards."
+              </p>
+              <p className="text-sm text-gray-500 mt-3">Medical Practitioner - Eldoret</p>
+            </div>
+
+            {/* Testimonial 3 */}
+            <div className="bg-gray-50 rounded-lg p-6 shadow-lg" data-testid="testimonial-grace">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-xl">👵</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Grace Muthoni</h4>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-600 italic">
+                "Managing my diabetes has become so much easier with their service. Regular medication delivery, 
+                helpful reminders, and affordable prices. The online consultation feature is a blessing!"
+              </p>
+              <p className="text-sm text-gray-500 mt-3">Satisfied Customer - Kisumu</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Service Information */}
+      <section className="bg-primary/5 py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Free Delivery */}
+            <div className="text-center" data-testid="service-free-delivery">
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Truck className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Free Delivery</h3>
+              <p className="text-gray-600">
+                Free delivery on orders over KES 2,000 within Nairobi. 
+                Same-day delivery available for urgent prescriptions.
+              </p>
+            </div>
+
+            {/* Prescription Upload */}
+            <div className="text-center" data-testid="service-prescription-upload">
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Upload className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Easy Prescription Upload</h3>
+              <p className="text-gray-600">
+                Simply upload your prescription and our licensed pharmacists 
+                will verify and prepare your medication order safely.
+              </p>
+            </div>
+
+            {/* Online Consultation */}
+            <div className="text-center" data-testid="service-online-consultation">
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Video className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Online Consultation</h3>
+              <p className="text-gray-600">
+                Schedule video calls with our qualified pharmacists for 
+                medication counseling and health guidance from home.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Signup */}
+      <section className="bg-primary py-12">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">Stay Updated on Health Matters</h2>
+          <p className="text-white/90 mb-8 max-w-2xl mx-auto">
+            Subscribe to our newsletter for health tips, medication reminders, and exclusive pharmacy deals
+          </p>
+          <div className="max-w-md mx-auto flex gap-4" data-testid="newsletter-signup">
+            <input 
+              type="email" 
+              placeholder="Enter your email address"
+              className="flex-1 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-500"
+            />
+            <Button variant="secondary" className="px-6 py-3">
+              Subscribe
+            </Button>
+          </div>
+          <p className="text-white/70 text-sm mt-4">
+            We respect your privacy. Unsubscribe at any time.
+          </p>
+        </div>
+      </section>
+
       {/* Chat Support Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <Button 
