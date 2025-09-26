@@ -1,9 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
+import multer from "multer";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendPrescriptionStatusEmail, sendOrderConfirmationEmail } from "./emailService";
+import { ObjectStorageService } from "./objectStorage";
 import Stripe from "stripe";
 import { z } from "zod";
 import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema, inventory, orders, prescriptions, users, consultations } from "@shared/schema";
@@ -49,6 +51,21 @@ if (!stripeSecretKey) {
 
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2024-06-20",
+});
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  },
 });
 
 // Centralized KES payment helper to ensure currency consistency
@@ -1085,6 +1102,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting product:", error);
       res.status(500).json({ message: "Failed to delete product" });
+    }
+  });
+
+  // Image upload route for admin
+  app.post("/api/admin/upload-image", isAuthenticated, upload.single('image'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file provided" });
+      }
+
+      // Additional security: verify file is actually an image
+      const buffer = req.file.buffer;
+      const isValidImage = buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF || // JPEG
+                          buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47 || // PNG
+                          buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46; // GIF
+
+      if (!isValidImage) {
+        return res.status(400).json({ message: "Invalid image format. Only JPEG, PNG, and GIF are allowed." });
+      }
+
+      // Generate secure filename with UUID
+      const fileExtension = req.file.mimetype.split('/')[1] || 'jpg';
+      const secureFilename = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExtension}`;
+
+      const objectStorageService = new ObjectStorageService();
+      const imageUrl = await objectStorageService.uploadToPublicDir(
+        req.file.buffer,
+        secureFilename,
+        req.file.mimetype
+      );
+
+      res.json({ imageUrl });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      if (error instanceof Error && error.message.includes('Only image files are allowed')) {
+        return res.status(400).json({ message: "Only image files are allowed" });
+      }
+      res.status(500).json({ message: "Failed to upload image" });
+    }
+  });
+
+  // Route to serve public images
+  app.get("/public-objects/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error searching for public object:", error);
+      return res.status(500).json({ error: "Internal server error" });
     }
   });
 

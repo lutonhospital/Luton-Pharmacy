@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { ImageUploader } from "@/components/ImageUploader";
 import {
   Dialog,
   DialogContent,
@@ -378,14 +379,21 @@ export default function AdminProducts() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Image URL</label>
-                  <Input
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                    placeholder="https://example.com/image.jpg"
-                    data-testid="input-image-url"
+                  <label className="text-sm font-medium">Product Image</label>
+                  <ImageUploader
+                    onImageUploaded={(imageUrl) => setFormData({...formData, imageUrl})}
+                    currentImageUrl={formData.imageUrl}
+                    maxSizeInMB={5}
                   />
+                  <div className="mt-2">
+                    <Input
+                      type="url"
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                      placeholder="Or enter image URL manually"
+                      data-testid="input-image-url"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
