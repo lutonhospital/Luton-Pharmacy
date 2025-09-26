@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import { 
   ShoppingCart, 
@@ -368,6 +370,8 @@ const slugify = (text: string): string => {
 };
 
 export default function Home() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -382,6 +386,47 @@ export default function Home() {
     },
     enabled: true,
   });
+
+  // Add to cart mutation
+  const addToCartMutation = useMutation({
+    mutationFn: async (data: { inventoryId: string; quantity: number }) => {
+      const response = await apiRequest("POST", "/api/cart", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Added to Cart",
+        description: "Item successfully added to your cart",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add item to cart",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddToCart = (product: Product) => {
+    if (!user) {
+      toast({
+        title: "Please Login",
+        description: "You need to login to add items to your cart",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 1500);
+      return;
+    }
+
+    addToCartMutation.mutate({
+      inventoryId: product.id,
+      quantity: 1,
+    });
+  };
 
   // Auto-slide functionality for hero slider
   useEffect(() => {
@@ -617,10 +662,12 @@ export default function Home() {
                     <Button 
                       size="sm" 
                       className="w-full bg-primary hover:bg-primary/90 text-xs"
+                      onClick={() => handleAddToCart(product)}
+                      disabled={addToCartMutation.isPending || product.currentStock === 0}
                       data-testid={`button-add-to-cart-${product.id}`}
                     >
                       <ShoppingCart className="h-3 w-3 mr-1" />
-                      Add to Cart
+                      {product.currentStock === 0 ? "Out of Stock" : "Add to Cart"}
                     </Button>
                   </CardContent>
                 </Card>

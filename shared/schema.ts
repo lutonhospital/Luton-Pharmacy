@@ -49,6 +49,13 @@ export const orderStatusEnum = pgEnum("order_status", [
   "cancelled"
 ]);
 
+// Payment method enum
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "cash",
+  "mpesa", 
+  "card"
+]);
+
 // Users table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -109,7 +116,10 @@ export const orders = pgTable("orders", {
   orderNumber: varchar("order_number").unique().notNull(),
   status: orderStatusEnum("status").default("pending_payment"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  paymentIntentId: varchar("payment_intent_id"),
+  paymentMethod: paymentMethodEnum("payment_method").default("card"),
+  paymentIntentId: varchar("payment_intent_id"), // For Stripe card payments
+  mpesaReceiptNumber: varchar("mpesa_receipt_number"), // For M-Pesa transactions
+  mpesaTransactionId: varchar("mpesa_transaction_id"), // For M-Pesa transaction tracking
   deliveryMethod: varchar("delivery_method").notNull(), // "pickup" or "delivery"
   deliveryAddressId: varchar("delivery_address_id").references(() => addresses.id),
   estimatedReadyTime: timestamp("estimated_ready_time"),
