@@ -25,6 +25,7 @@ import Signup from "@/pages/Signup";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import TrackOrder from "@/pages/TrackOrder";
+import Cart from "@/pages/Cart";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Payment from "@/pages/Payment";
@@ -54,6 +55,7 @@ function Router() {
           <Route path="/terms" component={Terms} />
           <Route path="/privacy" component={Privacy} />
           <Route path="/track-order" component={TrackOrder} />
+          <Route path="/cart" component={Cart} />
 
           {/* Admin login route - accessible without authentication */}
           <Route path="/admin/login" component={AdminLogin} />

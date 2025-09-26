@@ -235,20 +235,22 @@ export default function Navigation({ user }: NavigationProps) {
               </Button>
 
               {/* Cart */}
-              <Button variant="ghost" className="relative" data-testid="button-cart">
-                <ShoppingCart className="h-6 w-6 text-gray-600 hover:text-primary" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-                <div className="hidden lg:block ml-2">
-                  <p className="text-sm font-medium text-gray-700">Cart</p>
-                  <p className="text-xs text-gray-500">
-                    {user ? `KES ${cartTotal.toFixed(2)}` : `${cartCount} items`}
-                  </p>
-                </div>
-              </Button>
+              <Link href="/cart">
+                <Button variant="ghost" className="relative" data-testid="button-cart">
+                  <ShoppingCart className="h-6 w-6 text-gray-600 hover:text-primary" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                  <div className="hidden lg:block ml-2">
+                    <p className="text-sm font-medium text-gray-700">Cart</p>
+                    <p className="text-xs text-gray-500">
+                      {user ? `KES ${cartTotal.toFixed(2)}` : `${cartCount} items`}
+                    </p>
+                  </div>
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
