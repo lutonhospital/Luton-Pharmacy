@@ -956,6 +956,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single product by ID for product detail page
+  app.get("/api/product/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await storage.getInventoryById(id);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      if (!product.isActive) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+
   // Shopping cart routes
   app.get("/api/cart", isAuthenticated, async (req: any, res) => {
     try {

@@ -329,46 +329,56 @@ export default function Shop() {
                   "space-y-4"
                 }>
                   {products?.map((product) => (
-                    <Card key={product.id} className="group hover:shadow-lg transition-shadow">
-                      <CardContent className="p-4">
+                    <Card key={product.id} className="group hover:shadow-lg transition-shadow overflow-hidden">
+                      <CardContent className="p-0">
                         {viewMode === "grid" ? (
-                          <div className="space-y-4">
-                            <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                              {product.imageUrl ? (
-                                <img 
-                                  src={product.imageUrl} 
-                                  alt={product.medicationName}
-                                  className="w-full h-full object-cover rounded-lg"
-                                />
-                              ) : (
-                                <div className="text-muted-foreground text-sm">No image</div>
-                              )}
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-foreground">{product.medicationName}</h3>
-                              <p className="text-sm text-muted-foreground">{product.dosage}</p>
-                              <Badge variant="secondary" className="mt-1">
-                                {getCategoryLabel(product.category)}
-                              </Badge>
-                              {/* Star Rating */}
-                              <div className="flex items-center mt-2" data-testid={`rating-${product.id}`}>
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                <span className="text-sm text-muted-foreground ml-1" aria-label={`Rating: ${product.rating || 4.5} out of 5 stars`}>
-                                  {product.rating || 4.5}
-                                </span>
+                          <>
+                            <Link href={`/product/${product.id}`} className="block">
+                              <div className="p-4 space-y-4 cursor-pointer">
+                                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                                  {product.imageUrl ? (
+                                    <img 
+                                      src={product.imageUrl} 
+                                      alt={product.medicationName}
+                                      className="w-full h-full object-cover rounded-lg"
+                                    />
+                                  ) : (
+                                    <div className="text-muted-foreground text-sm">No image</div>
+                                  )}
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold text-foreground">{product.medicationName}</h3>
+                                  <p className="text-sm text-muted-foreground">{product.dosage}</p>
+                                  <Badge variant="secondary" className="mt-1">
+                                    {getCategoryLabel(product.category)}
+                                  </Badge>
+                                  {/* Star Rating */}
+                                  <div className="flex items-center mt-2" data-testid={`rating-${product.id}`}>
+                                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-sm text-muted-foreground ml-1" aria-label={`Rating: ${product.rating || 4.5} out of 5 stars`}>
+                                      {product.rating || 4.5}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <div>
+                                    <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
+                                    {product.originalPrice && (
+                                      <p className="text-sm text-muted-foreground line-through">
+                                        KES {parseFloat(product.originalPrice).toLocaleString()}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                            <div className="space-y-3">
-                              <div>
-                                <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
-                                {product.originalPrice && (
-                                  <p className="text-sm text-muted-foreground line-through">
-                                    KES {parseFloat(product.originalPrice).toLocaleString()}
-                                  </p>
-                                )}
-                              </div>
+                            </Link>
+                            <div className="p-4 pt-0">
                               <Button
-                                onClick={() => handleAddToCart(product)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleAddToCart(product);
+                                }}
                                 disabled={addToCartMutation.isPending || product.currentStock === 0}
                                 className="w-full"
                                 data-testid={`button-add-to-cart-${product.id}`}
@@ -376,62 +386,72 @@ export default function Shop() {
                                 {product.currentStock === 0 ? "Out of Stock" : "Add to Cart"}
                               </Button>
                             </div>
-                          </div>
+                          </>
                         ) : (
-                          <div className="flex gap-4">
-                            <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                              {product.imageUrl ? (
-                                <img 
-                                  src={product.imageUrl} 
-                                  alt={product.medicationName}
-                                  className="w-full h-full object-cover rounded-lg"
-                                />
-                              ) : (
-                                <div className="text-muted-foreground text-xs">No image</div>
-                              )}
-                            </div>
-                            <div className="flex-1 flex justify-between">
-                              <div>
-                                <h3 className="font-semibold text-foreground">{product.medicationName}</h3>
-                                <p className="text-sm text-muted-foreground">{product.dosage}</p>
-                                <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
-                                <div className="flex gap-2 mt-2">
-                                  <Badge variant="secondary">
-                                    {getCategoryLabel(product.category)}
-                                  </Badge>
-                                  {product.requiresPrescription && (
-                                    <Badge variant="destructive">
-                                      Prescription Required
-                                    </Badge>
+                          <div className="p-4">
+                            <Link href={`/product/${product.id}`} className="block">
+                              <div className="flex gap-4 cursor-pointer">
+                                <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                                  {product.imageUrl ? (
+                                    <img 
+                                      src={product.imageUrl} 
+                                      alt={product.medicationName}
+                                      className="w-full h-full object-cover rounded-lg"
+                                    />
+                                  ) : (
+                                    <div className="text-muted-foreground text-xs">No image</div>
                                   )}
                                 </div>
-                                {/* Star Rating */}
-                                <div className="flex items-center mt-2" data-testid={`rating-${product.id}`}>
-                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-sm text-muted-foreground ml-1" aria-label={`Rating: ${product.rating || 4.5} out of 5 stars`}>
-                                    {product.rating || 4.5}
-                                  </span>
+                                <div className="flex-1 flex justify-between">
+                                  <div>
+                                    <h3 className="font-semibold text-foreground">{product.medicationName}</h3>
+                                    <p className="text-sm text-muted-foreground">{product.dosage}</p>
+                                    <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                                    <div className="flex gap-2 mt-2">
+                                      <Badge variant="secondary">
+                                        {getCategoryLabel(product.category)}
+                                      </Badge>
+                                      {product.requiresPrescription && (
+                                        <Badge variant="destructive">
+                                          Prescription Required
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {/* Star Rating */}
+                                    <div className="flex items-center mt-2" data-testid={`rating-${product.id}`}>
+                                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                      <span className="text-sm text-muted-foreground ml-1" aria-label={`Rating: ${product.rating || 4.5} out of 5 stars`}>
+                                        {product.rating || 4.5}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-right min-w-[140px] flex flex-col justify-between">
+                                    <div>
+                                      <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
+                                      {product.originalPrice && (
+                                        <p className="text-sm text-muted-foreground line-through">
+                                          KES {parseFloat(product.originalPrice).toLocaleString()}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="text-right min-w-[140px] flex flex-col justify-between">
-                                <div>
-                                  <p className="text-lg font-bold text-foreground">KES {parseFloat(product.unitPrice).toLocaleString()}</p>
-                                  {product.originalPrice && (
-                                    <p className="text-sm text-muted-foreground line-through">
-                                      KES {parseFloat(product.originalPrice).toLocaleString()}
-                                    </p>
-                                  )}
-                                </div>
-                                <Button
-                                  className="mt-2 w-full"
-                                  size="sm"
-                                  onClick={() => handleAddToCart(product)}
-                                  disabled={addToCartMutation.isPending || product.currentStock === 0}
-                                  data-testid={`button-add-to-cart-${product.id}`}
-                                >
-                                  {product.currentStock === 0 ? "Out of Stock" : "Add to Cart"}
-                                </Button>
-                              </div>
+                            </Link>
+                            <div className="mt-3 flex justify-end">
+                              <Button
+                                className="w-full"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleAddToCart(product);
+                                }}
+                                disabled={addToCartMutation.isPending || product.currentStock === 0}
+                                data-testid={`button-add-to-cart-${product.id}`}
+                              >
+                                {product.currentStock === 0 ? "Out of Stock" : "Add to Cart"}
+                              </Button>
                             </div>
                           </div>
                         )}

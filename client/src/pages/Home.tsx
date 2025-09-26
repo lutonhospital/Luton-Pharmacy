@@ -640,52 +640,62 @@ export default function Home() {
           ) : featuredMedicines && featuredMedicines.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {featuredMedicines.map((product) => (
-                <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow" data-testid={`card-featured-${slugify(product.medicationName)}`}>
-                  <CardContent className="p-4">
-                    <div className="text-center mb-3">
-                      <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-                        <span className="text-2xl">💊</span>
-                      </div>
-                      <h3 className="text-sm font-medium text-gray-800 mb-2 line-clamp-2">{product.medicationName}</h3>
-                      <p className="text-xs text-gray-500 mb-2">{product.dosage}</p>
-                      <div className="flex items-center justify-center mb-2">
-                        <div className="flex items-center">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star 
-                              key={star} 
-                              className={`h-3 w-3 ${star <= (product.rating || 4) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                            />
-                          ))}
+                <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden" data-testid={`card-featured-${slugify(product.medicationName)}`}>
+                  <CardContent className="p-0">
+                    <Link href={`/product/${product.id}`} className="block">
+                      <div className="p-4 cursor-pointer">
+                        <div className="text-center mb-3">
+                          <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                            <span className="text-2xl">💊</span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-800 mb-2 line-clamp-2">{product.medicationName}</h3>
+                          <p className="text-xs text-gray-500 mb-2">{product.dosage}</p>
+                          <div className="flex items-center justify-center mb-2">
+                            <div className="flex items-center">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star 
+                                  key={star} 
+                                  className={`h-3 w-3 ${star <= (product.rating || 4) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs text-gray-500 ml-1">({product.rating || 4})</span>
+                          </div>
+                          <div className="flex items-center justify-center space-x-2 mb-3">
+                            <span className="text-lg font-bold text-primary">KES {product.unitPrice}</span>
+                            {product.originalPrice && (
+                              <span className="text-sm text-gray-500 line-through">KES {product.originalPrice}</span>
+                            )}
+                          </div>
+                          {product.requiresPrescription && (
+                            <Badge variant="destructive" className="text-xs mb-2 bg-red-100 text-red-800 border-red-300">
+                              Prescription Required
+                            </Badge>
+                          )}
+                          {product.category === "prescription_medicines" && (
+                            <Badge variant="outline" className="text-xs mb-2 bg-green-100 text-green-800 border-green-300">
+                              Prescription Medicine
+                            </Badge>
+                          )}
                         </div>
-                        <span className="text-xs text-gray-500 ml-1">({product.rating || 4})</span>
                       </div>
-                      <div className="flex items-center justify-center space-x-2 mb-3">
-                        <span className="text-lg font-bold text-primary">KES {product.unitPrice}</span>
-                        {product.originalPrice && (
-                          <span className="text-sm text-gray-500 line-through">KES {product.originalPrice}</span>
-                        )}
-                      </div>
-                      {product.requiresPrescription && (
-                        <Badge variant="destructive" className="text-xs mb-2 bg-red-100 text-red-800 border-red-300">
-                          Prescription Required
-                        </Badge>
-                      )}
-                      {product.category === "prescription_medicines" && (
-                        <Badge variant="outline" className="text-xs mb-2 bg-green-100 text-green-800 border-green-300">
-                          Prescription Medicine
-                        </Badge>
-                      )}
+                    </Link>
+                    <div className="px-4 pb-4">
+                      <Button 
+                        size="sm" 
+                        className="w-full bg-primary hover:bg-primary/90 text-xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleAddToCart(product);
+                        }}
+                        disabled={addToCartMutation.isPending || product.currentStock === 0}
+                        data-testid={`button-add-to-cart-${product.id}`}
+                      >
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        {product.currentStock === 0 ? "Out of Stock" : "Add to Cart"}
+                      </Button>
                     </div>
-                    <Button 
-                      size="sm" 
-                      className="w-full bg-primary hover:bg-primary/90 text-xs"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={addToCartMutation.isPending || product.currentStock === 0}
-                      data-testid={`button-add-to-cart-${product.id}`}
-                    >
-                      <ShoppingCart className="h-3 w-3 mr-1" />
-                      {product.currentStock === 0 ? "Out of Stock" : "Add to Cart"}
-                    </Button>
                   </CardContent>
                 </Card>
               ))}
