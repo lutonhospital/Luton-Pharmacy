@@ -70,13 +70,15 @@ function Router() {
           {/* Admin login route - accessible without authentication */}
           <Route path="/admin/login" component={AdminLogin} />
 
+          {/* Protected client routes - components handle authentication internally */}
+          <Route path="/profile" component={Profile} />
+          <Route path="/orders" component={Orders} />
+          <Route path="/prescriptions" component={Prescriptions} />
+
           {/* Client authentication routes */}
           {isAuthenticated && (
             <>
               <Route path="/dashboard" component={Dashboard} />
-              <Route path="/profile" component={Profile} />
-              <Route path="/orders" component={Orders} />
-              <Route path="/prescriptions" component={Prescriptions} />
               <Route path="/payment/:orderId" component={Payment} />
             </>
           )}
