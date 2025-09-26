@@ -220,12 +220,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
 
-      console.log('Admin login attempt:', { 
-        username: username ? `"${username}"` : undefined, 
-        password: password ? '[PASSWORD PROVIDED]' : undefined,
-        envUsername: process.env.ADMIN_USERNAME ? `"${process.env.ADMIN_USERNAME}"` : undefined,
-        envPassword: process.env.ADMIN_PASSWORD ? '[ENV PASSWORD SET]' : undefined
-      });
+      console.log('=== ADMIN LOGIN DEBUG ===');
+      console.log('Received username:', JSON.stringify(username));
+      console.log('Received password:', JSON.stringify(password));
+      console.log('Expected username:', JSON.stringify(process.env.ADMIN_USERNAME));
+      console.log('Expected password:', JSON.stringify(process.env.ADMIN_PASSWORD));
+      console.log('Username match:', username === process.env.ADMIN_USERNAME);
+      console.log('Password match:', password === process.env.ADMIN_PASSWORD);
+      console.log('========================');
 
       if (!username || !password) {
         console.log('Admin login failed: missing credentials');
