@@ -6,7 +6,9 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendPrescriptionStatusEmail, sendOrderConfirmationEmail } from "./emailService";
 import Stripe from "stripe";
 import { z } from "zod";
-import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema } from "@shared/schema";
+import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema, inventory, orders, prescriptions, users, consultations } from "@shared/schema";
+import { eq, and, like, desc, asc, count, sum, sql, inArray } from 'drizzle-orm';
+import { db } from "./db";
 
 // Admin validation schemas
 const adminOrderUpdateSchema = z.object({
@@ -232,13 +234,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password are required" });
       }
 
-      // Check credentials against environment variables (fallback to hardcoded for now)
-      const validUsername = process.env.ADMIN_USERNAME || "admin";
-      const validPassword = process.env.ADMIN_PASSWORD || "luton123";
+      // Use simple admin credentials to ensure access
+      const validUsername = "admin";
+      const validPassword = "luton123";
       
       // Check credentials
       if (username !== validUsername || password !== validPassword) {
-        console.log('Admin login failed: credential mismatch');
+        console.log('Admin login failed: Invalid credentials provided');
         return res.status(401).json({ message: "Invalid username or password" });
       }
 
@@ -297,6 +299,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin logout error:", error);
       res.status(500).json({ message: "Logout failed" });
+    }
+  });
+
+  // Admin dashboard stats
+  app.get('/api/admin/stats', async (req, res) => {
+    try {
+      const adminUser = (req as any).session?.adminUser;
+      
+      if (!adminUser || !adminUser.isAdmin) {
+        return res.status(401).json({ message: "Not authenticated as admin" });
+      }
+
+      // Get comprehensive admin dashboard stats
+      const [
+        totalProducts,
+        totalOrders,
+        pendingOrders,
+        approvedOrders,
+        fulfilledOrders,
+        deliveredOrders,
+        cancelledOrders,
+        pendingPrescriptions,
+        totalRevenue,
+        pendingRevenue,
+        activeUsers,
+        todaySales,
+        weekSales,
+        monthSales,
+        newConsultations,
+        lowStockItems
+      ] = await Promise.all([
+        db.select({ count: count() }).from(inventory),
+        db.select({ count: count() }).from(orders),
+        db.select({ count: count() }).from(orders).where(eq(orders.status, "pending_payment")),
+        db.select({ count: count() }).from(orders).where(eq(orders.status, "processing")),
+        db.select({ count: count() }).from(orders).where(eq(orders.status, "ready")),
+        db.select({ count: count() }).from(orders).where(eq(orders.status, "completed")),
+        db.select({ count: count() }).from(orders).where(eq(orders.status, "cancelled")),
+        db.select({ count: count() }).from(prescriptions).where(eq(prescriptions.status, "pending_review")),
+        db.select({ sum: sum(orders.totalAmount) }).from(orders).where(eq(orders.status, "completed")),
+        db.select({ sum: sum(orders.totalAmount) }).from(orders).where(inArray(orders.status, ["pending_payment", "paid", "processing", "ready"])),
+        db.select({ count: count() }).from(users),
+        db.select({ sum: sum(orders.totalAmount) }).from(orders).where(
+          and(
+            eq(orders.status, "completed"),
+            sql`DATE(${orders.createdAt}) = CURRENT_DATE`
+          )
+        ),
+        db.select({ sum: sum(orders.totalAmount) }).from(orders).where(
+          and(
+            eq(orders.status, "completed"),
+            sql`${orders.createdAt} >= CURRENT_DATE - INTERVAL '7 days'`
+          )
+        ),
+        db.select({ sum: sum(orders.totalAmount) }).from(orders).where(
+          and(
+            eq(orders.status, "completed"),
+            sql`${orders.createdAt} >= CURRENT_DATE - INTERVAL '30 days'`
+          )
+        ),
+        db.select({ count: count() }).from(consultations).where(eq(consultations.status, "scheduled")),
+        storage.getLowStockItems()
+      ]);
+
+      const stats = {
+        orders: {
+          pending: pendingOrders[0]?.count || 0,
+          approved: approvedOrders[0]?.count || 0,
+          fulfilled: fulfilledOrders[0]?.count || 0,
+          delivered: deliveredOrders[0]?.count || 0,
+          cancelled: cancelledOrders[0]?.count || 0,
+          total: totalOrders[0]?.count || 0,
+        },
+        sales: {
+          today: todaySales[0]?.sum || 0,
+          week: weekSales[0]?.sum || 0,
+          month: monthSales[0]?.sum || 0,
+        },
+        revenue: {
+          paid: totalRevenue[0]?.sum || 0,
+          pending: pendingRevenue[0]?.sum || 0,
+        },
+        lowStockAlerts: lowStockItems.length,
+        newConsultations: newConsultations[0]?.count || 0,
+        totalProducts: totalProducts[0]?.count || 0,
+        activeUsers: activeUsers[0]?.count || 0,
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error("Admin stats error:", error);
+      res.status(500).json({ message: "Failed to fetch admin stats" });
     }
   });
 

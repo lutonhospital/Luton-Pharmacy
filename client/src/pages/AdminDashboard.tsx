@@ -19,7 +19,7 @@ import {
   TrendingUp,
   TrendingDown
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface DashboardStats {
   orders: {
@@ -46,16 +46,16 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isAdmin } = useAdminAuth();
 
   // Fetch dashboard statistics
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/stats"],
-    enabled: user?.role === "admin" || user?.role === "pharmacist",
+    enabled: isAuthenticated && isAdmin,
   });
 
   // Redirect if not authorized
-  if (!user || (user.role !== "admin" && user.role !== "pharmacist")) {
+  if (!isAuthenticated || !isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="p-6 max-w-md">
@@ -63,10 +63,10 @@ export default function AdminDashboard() {
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
             <p className="text-gray-600 mb-4">
-              You need admin or pharmacist privileges to access this dashboard.
+              You need admin privileges to access this dashboard. Please log in with admin credentials.
             </p>
-            <Link href="/">
-              <Button>Return to Homepage</Button>
+            <Link href="/admin/login">
+              <Button>Go to Admin Login</Button>
             </Link>
           </CardContent>
         </Card>
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
                 Admin Dashboard
               </h1>
               <p className="text-gray-600 mt-1">
-                Welcome back, {user.firstName} {user.lastName}
+                Welcome back, {user?.firstName || 'Admin'} {user?.lastName || 'User'}
               </p>
             </div>
             <div className="flex gap-3">
