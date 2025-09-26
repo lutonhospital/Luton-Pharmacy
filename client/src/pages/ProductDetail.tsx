@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { CartUtils } from "@/lib/cartUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -117,21 +118,23 @@ export default function ProductDetail() {
   }, [product]);
 
   const handleAddToCart = () => {
-    if (!user) {
-      toast({
-        title: "Please log in",
-        description: "You need to be logged in to add items to cart",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!product) return;
 
-    addToCartMutation.mutate({
-      inventoryId: product.id,
-      quantity,
-    });
+    if (user) {
+      // User is logged in, use authenticated cart
+      addToCartMutation.mutate({
+        inventoryId: product.id,
+        quantity,
+      });
+    } else {
+      // Guest user, use local storage cart
+      CartUtils.addToGuestCart(product.id, quantity);
+      queryClient.invalidateQueries({ queryKey: ['guest-cart'] });
+      toast({
+        title: "Added to cart",
+        description: `${quantity} × ${product.medicationName} added to your cart`,
+      });
+    }
   };
 
   const handleQuantityChange = (newQuantity: number) => {

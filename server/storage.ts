@@ -77,6 +77,7 @@ export interface IStorage {
   // Inventory operations
   getInventory(): Promise<Inventory[]>;
   getInventoryItem(medicationName: string, dosage: string): Promise<Inventory | undefined>;
+  getInventoryById(id: string): Promise<Inventory | undefined>;
   updateInventoryStock(id: string, newStock: number): Promise<Inventory>;
   getLowStockItems(): Promise<Inventory[]>;
   // Admin inventory management
@@ -418,6 +419,14 @@ export class DatabaseStorage implements IStorage {
         eq(inventory.medicationName, medicationName),
         eq(inventory.dosage, dosage)
       ));
+    return item;
+  }
+
+  async getInventoryById(id: string): Promise<Inventory | undefined> {
+    const [item] = await db
+      .select()
+      .from(inventory)
+      .where(eq(inventory.id, id));
     return item;
   }
 

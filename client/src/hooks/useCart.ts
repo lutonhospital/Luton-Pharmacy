@@ -31,6 +31,16 @@ export function useCart() {
     refetchOnWindowFocus: false,
   });
 
+  // Query for guest cart with product details
+  const { data: enrichedGuestCart, isLoading: guestCartLoading } = useQuery<CartItem[]>({
+    queryKey: ["guestCart"],
+    queryFn: async () => {
+      return await CartUtils.getEnrichedGuestCart();
+    },
+    enabled: !isAuthenticated,
+    refetchOnWindowFocus: false,
+  });
+
   // Update guest cart count when guest cart changes
   useEffect(() => {
     const updateGuestCartCount = () => {
@@ -92,15 +102,18 @@ export function useCart() {
         const price = parseFloat(item.product?.unitPrice || "0");
         return total + (price * item.quantity);
       }, 0) || 0)
-    : 0; // For guest cart, we'd need to fetch product prices
+    : (enrichedGuestCart?.reduce((total, item) => {
+        const price = parseFloat(item.product?.unitPrice || "0");
+        return total + (price * item.quantity);
+      }, 0) || 0);
 
-  const cartItems = isAuthenticated ? authenticatedCart || [] : [];
+  const cartItems = isAuthenticated ? (authenticatedCart || []) : (enrichedGuestCart || []);
 
   return {
     cartItems,
     cartCount,
     cartTotal,
-    isLoading: isAuthenticated ? authenticatedCartLoading : false,
+    isLoading: isAuthenticated ? authenticatedCartLoading : guestCartLoading,
     isAuthenticated,
     user,
   };

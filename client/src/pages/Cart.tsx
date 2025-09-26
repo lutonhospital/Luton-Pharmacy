@@ -9,6 +9,7 @@ import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2, CreditCard } from "lucide
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { CartUtils } from "@/lib/cartUtils";
 
 export default function Cart() {
   const { user, isAuthenticated } = useAuth();
@@ -59,6 +60,27 @@ export default function Cart() {
       });
     },
   });
+
+  // Guest cart operations
+  const handleGuestCartUpdate = (inventoryId: string, quantity: number) => {
+    CartUtils.updateGuestCartItem(inventoryId, quantity);
+    queryClient.invalidateQueries({ queryKey: ["guestCart"] });
+    window.dispatchEvent(new CustomEvent('guestCartUpdated'));
+    toast({
+      title: "Cart Updated",
+      description: "Item quantity updated successfully",
+    });
+  };
+
+  const handleGuestCartRemove = (inventoryId: string) => {
+    CartUtils.removeFromGuestCart(inventoryId);
+    queryClient.invalidateQueries({ queryKey: ["guestCart"] });
+    window.dispatchEvent(new CustomEvent('guestCartUpdated'));
+    toast({
+      title: "Item Removed",
+      description: "Item removed from cart successfully",
+    });
+  };
 
   const displayItems = cartItems;
   const displayTotal = cartTotal;
@@ -137,28 +159,7 @@ export default function Cart() {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           
-          {!isAuthenticated ? (
-            /* Guest Cart - Show login message */
-            <Card>
-              <CardContent className="text-center py-12">
-                <ShoppingCart className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Login to View Your Cart</h3>
-                <p className="text-gray-600 mb-6">
-                  You have {displayCount} item{displayCount !== 1 ? 's' : ''} in your cart. Login to view details and checkout.
-                </p>
-                <div className="flex gap-4 justify-center">
-                  <Button onClick={() => setLocation('/login')} data-testid="button-login-to-view-cart">
-                    Login to View Cart
-                  </Button>
-                  <Link href="/shop">
-                    <Button variant="outline" data-testid="button-continue-shopping-guest">
-                      Continue Shopping
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ) : displayCount === 0 ? (
+          {displayCount === 0 ? (
             /* Empty Cart */
             <Card>
               <CardContent className="text-center py-12">
@@ -175,7 +176,7 @@ export default function Cart() {
               </CardContent>
             </Card>
           ) : (
-            /* Cart with Items - Authenticated Users Only */
+            /* Cart with Items - Both Authenticated and Guest Users */
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Cart Items */}
               <div className="lg:col-span-2 space-y-4">
@@ -209,10 +210,14 @@ export default function Cart() {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                updateCartMutation.mutate({ 
-                                  id: item.id, 
-                                  quantity: Math.max(1, item.quantity - 1) 
-                                });
+                                if (isAuthenticated) {
+                                  updateCartMutation.mutate({ 
+                                    id: item.id, 
+                                    quantity: Math.max(1, item.quantity - 1) 
+                                  });
+                                } else {
+                                  handleGuestCartUpdate(item.inventoryId, Math.max(1, item.quantity - 1));
+                                }
                               }}
                               data-testid={`button-decrease-quantity-${index}`}
                             >
@@ -225,10 +230,14 @@ export default function Cart() {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                updateCartMutation.mutate({ 
-                                  id: item.id, 
-                                  quantity: item.quantity + 1 
-                                });
+                                if (isAuthenticated) {
+                                  updateCartMutation.mutate({ 
+                                    id: item.id, 
+                                    quantity: item.quantity + 1 
+                                  });
+                                } else {
+                                  handleGuestCartUpdate(item.inventoryId, item.quantity + 1);
+                                }
                               }}
                               data-testid={`button-increase-quantity-${index}`}
                             >
@@ -241,7 +250,11 @@ export default function Cart() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              removeFromCartMutation.mutate(item.id);
+                              if (isAuthenticated) {
+                                removeFromCartMutation.mutate(item.id);
+                              } else {
+                                handleGuestCartRemove(item.inventoryId);
+                              }
                             }}
                             data-testid={`button-remove-${index}`}
                           >
@@ -283,6 +296,14 @@ export default function Cart() {
                       <span>KES {(displayTotal + 200).toFixed(2)}</span>
                     </div>
                     
+                    {!isAuthenticated && (
+                      <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                        <p className="text-sm text-blue-800">
+                          You'll need to login or sign up to complete checkout
+                        </p>
+                      </div>
+                    )}
+                    
                     <Button 
                       className="w-full bg-primary hover:bg-primary/90" 
                       onClick={handleCheckout}
@@ -290,7 +311,9 @@ export default function Cart() {
                       data-testid="button-checkout"
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
-                      {createOrderMutation.isPending ? 'Creating Order...' : 'Proceed to Checkout'}
+                      {createOrderMutation.isPending ? 'Creating Order...' : 
+                       isAuthenticated ? 'Proceed to Checkout' : 
+                       'Login to Checkout'}
                     </Button>
                   </CardContent>
                 </Card>
