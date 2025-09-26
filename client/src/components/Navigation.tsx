@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/hooks/useCart";
+import { toast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   MapPin, 
   Search, 
@@ -42,6 +45,31 @@ export default function Navigation({ user }: NavigationProps) {
   const { cartCount, cartTotal } = useCart();
 
   const userInitials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}` || 'U' : 'G';
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/auth/logout");
+    },
+    onSuccess: () => {
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      setLocation("/");
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Logout Failed",
+        description: error.message || "Failed to logout",
+      });
+    },
+  });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   const navigationLinks = [
     { href: "/", label: "Home" },
@@ -203,8 +231,8 @@ export default function Navigation({ user }: NavigationProps) {
                         <Link href="/admin">Admin Dashboard</Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => window.location.href = '/api/logout'}>
-                      Logout
+                    <DropdownMenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
+                      {logoutMutation.isPending ? "Logging out..." : "Logout"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

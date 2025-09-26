@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendPrescriptionStatusEmail, sendOrderConfirmationEmail } from "./emailService";
@@ -67,14 +68,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      // Check if user is authenticated via session
+      if (req.session && req.session.userId) {
+        const user = await storage.getUser(req.session.userId);
+        if (user) {
+          // Remove sensitive fields before sending to client
+          const { password, ...userWithoutPassword } = user;
+          res.json(userWithoutPassword);
+          return;
+        }
+      }
+      
+      // Check if user is authenticated via OIDC (fallback for existing sessions)
+      if (req.user && req.user.claims && req.user.claims.sub) {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        if (user) {
+          // Remove sensitive fields before sending to client
+          const { password, ...userWithoutPassword } = user;
+          res.json(userWithoutPassword);
+          return;
+        }
+      }
+      
+      res.status(401).json({ message: "Unauthorized" });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Email/Password authentication routes
+  app.post('/api/auth/signup', async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, phoneNumber } = req.body;
+
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ message: "Email, password, first name, and last name are required" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Hash password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      // Create user
+      const userData = {
+        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        email,
+        firstName,
+        lastName,
+        phone: phoneNumber || null, // Map phoneNumber to phone column
+        password: hashedPassword,
+        role: 'patient' as const,
+      };
+
+      const user = await storage.upsertUser(userData);
+
+      // Create session
+      (req as any).session.userId = user.id;
+      (req as any).session.userEmail = user.email;
+
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ 
+        message: "Account created successfully", 
+        user: userWithoutPassword 
+      });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Create session
+      (req as any).session.userId = user.id;
+      (req as any).session.userEmail = user.email;
+
+      // Save session explicitly
+      (req as any).session.save((err: any) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Session creation failed" });
+        }
+        
+        // Return user without password
+        const { password: _, ...userWithoutPassword } = user;
+        res.json({ 
+          message: "Login successful", 
+          user: userWithoutPassword 
+        });
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post('/api/auth/logout', async (req, res) => {
+    try {
+      if ((req as any).session) {
+        (req as any).session.destroy((err: any) => {
+          if (err) {
+            console.error("Session destruction error:", err);
+            return res.status(500).json({ message: "Failed to logout" });
+          }
+          res.json({ message: "Logout successful" });
+        });
+      } else {
+        res.json({ message: "Logout successful" });
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ message: "Logout failed" });
     }
   });
 
@@ -269,9 +406,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/prescription-uploads', isAuthenticated, async (req: any, res) => {
+  app.post('/api/prescription-uploads', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // Check if user is authenticated
+      const isAuthenticated = req.user && req.user.claims && req.user.claims.sub;
+      let userId = null;
+      
+      if (isAuthenticated) {
+        userId = req.user.claims.sub;
+      } else {
+        // For guests, create a temporary identifier
+        userId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      }
       
       // Validate request body using shared schema
       const validationResult = insertPrescriptionUploadSchema.safeParse({
