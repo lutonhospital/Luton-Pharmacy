@@ -215,10 +215,50 @@ export default function Payment() {
               <h3 className="font-medium text-foreground mb-2">Order Summary</h3>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Order #{(order as any).orderNumber}</span>
-                <span className="font-semibold text-foreground">£{(order as any).totalAmount}</span>
+                <span className="font-semibold text-foreground">KES {(order as any).totalAmount}</span>
               </div>
             </div>
 
+            {/* Payment Method Selection */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-foreground">Choose Payment Method</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* M-Pesa Option */}
+                <div className="border border-gray-200 rounded-lg p-4 hover:border-primary cursor-pointer transition-colors">
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 font-bold text-lg">M</span>
+                    </div>
+                    <h4 className="font-medium">M-Pesa</h4>
+                    <p className="text-sm text-gray-500">Pay with M-Pesa mobile money</p>
+                  </div>
+                </div>
+
+                {/* Cash Option */}
+                <div className="border border-gray-200 rounded-lg p-4 hover:border-primary cursor-pointer transition-colors">
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-bold text-lg">₵</span>
+                    </div>
+                    <h4 className="font-medium">Cash on Delivery</h4>
+                    <p className="text-sm text-gray-500">Pay when you receive your order</p>
+                  </div>
+                </div>
+
+                {/* Card Option */}
+                <div className="border border-gray-200 rounded-lg p-4 hover:border-primary cursor-pointer transition-colors">
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                      <span className="text-purple-600 font-bold text-lg">💳</span>
+                    </div>
+                    <h4 className="font-medium">Debit/Credit Card</h4>
+                    <p className="text-sm text-gray-500">Pay securely with your card</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stripe Payment Form - shown by default for now */}
             <Elements stripe={stripePromise} options={{ clientSecret }}>
               <CheckoutForm orderId={orderId} />
             </Elements>

@@ -192,7 +192,7 @@ export default function Navigation({ user }: NavigationProps) {
             {/* Navigation Icons */}
             <div className="flex items-center space-x-2 lg:space-x-6">
               {/* Upload Prescription - Desktop Only */}
-              <Link href="/upload-prescription" className="hidden lg:block">
+              <Link href="/prescription-upload" className="hidden lg:block">
                 <Button variant="ghost" className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-primary" data-testid="nav-upload-prescription">
                   <Upload className="h-4 w-4" />
                   <span>Upload Prescription</span>
@@ -401,7 +401,7 @@ export default function Navigation({ user }: NavigationProps) {
 
               {/* Upload Prescription */}
               <div className="border-t pt-4 mb-4">
-                <Link href="/upload-prescription">
+                <Link href="/prescription-upload">
                   <Button 
                     variant="ghost" 
                     className="w-full justify-start text-left text-gray-700 hover:text-primary hover:bg-gray-50"
