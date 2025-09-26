@@ -31,7 +31,7 @@ const uploadFormSchema = insertPrescriptionUploadSchema.extend({
 type UploadFormData = z.infer<typeof uploadFormSchema>;
 
 export default function PrescriptionUpload() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -48,7 +48,7 @@ export default function PrescriptionUpload() {
     },
   });
 
-  // Fetch user's prescription uploads
+  // Fetch user's prescription uploads (only if logged in)
   const { data: prescriptionUploads, isLoading: uploadsLoading } = useQuery({
     queryKey: ["/api/prescription-uploads"],
     enabled: !!user,
@@ -153,28 +153,9 @@ export default function PrescriptionUpload() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-16 text-center">
-          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Login Required</h1>
-          <p className="text-gray-600 mb-8">Please log in to upload prescriptions and track your orders.</p>
-          <Button className="bg-primary hover:bg-primary/90" data-testid="button-login-required">
-            Log In to Continue
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Note: This page now works for both guests and authenticated users
+  // Guests can upload prescriptions, but will need to provide contact details
+  // Authenticated users can also track their previous uploads
 
   return (
     <div className="min-h-screen bg-background">

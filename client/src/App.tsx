@@ -22,6 +22,9 @@ import AdminPrescriptionVerification from "@/pages/AdminPrescriptionVerification
 import AdminLogin from "@/pages/AdminLogin";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import Terms from "@/pages/Terms";
+import Privacy from "@/pages/Privacy";
+import TrackOrder from "@/pages/TrackOrder";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Payment from "@/pages/Payment";
@@ -48,6 +51,9 @@ function Router() {
           <Route path="/landing" component={Landing} />
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
+          <Route path="/terms" component={Terms} />
+          <Route path="/privacy" component={Privacy} />
+          <Route path="/track-order" component={TrackOrder} />
 
           {/* Admin login route - accessible without authentication */}
           <Route path="/admin/login" component={AdminLogin} />

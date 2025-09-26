@@ -224,7 +224,7 @@ export default function Footer() {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <Link href="/"><span className="text-gray-400 hover:text-primary cursor-pointer">Home</span></Link>
                 <Link href="/shop"><span className="text-gray-400 hover:text-primary cursor-pointer">Shop</span></Link>
-                <Link href="/upload-prescription"><span className="text-gray-400 hover:text-primary cursor-pointer">Upload Prescription</span></Link>
+                <Link href="/prescription-upload"><span className="text-gray-400 hover:text-primary cursor-pointer">Upload Prescription</span></Link>
                 <Link href="/consultation"><span className="text-gray-400 hover:text-primary cursor-pointer">Online Consultation</span></Link>
                 <Link href="/track-order"><span className="text-gray-400 hover:text-primary cursor-pointer">Track Order</span></Link>
                 <Link href="/contact"><span className="text-gray-400 hover:text-primary cursor-pointer">Contact Us</span></Link>

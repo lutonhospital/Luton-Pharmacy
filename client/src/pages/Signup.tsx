@@ -12,6 +12,7 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const handleReplitSignup = () => {
@@ -93,6 +94,22 @@ export default function Signup() {
               />
               <p className="text-xs text-gray-500">
                 We'll use this for account verification and important updates
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="phoneNumber" className="text-gray-700 text-sm">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                placeholder="+254 700 123 456"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="w-full"
+                data-testid="input-phone-number"
+              />
+              <p className="text-xs text-gray-500">
+                Required for SMS notifications and order updates
               </p>
             </div>
           </div>

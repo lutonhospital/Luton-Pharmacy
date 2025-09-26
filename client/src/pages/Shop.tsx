@@ -350,11 +350,6 @@ export default function Shop() {
                               <Badge variant="secondary" className="mt-1">
                                 {getCategoryLabel(product.category)}
                               </Badge>
-                              {product.requiresPrescription && (
-                                <Badge variant="destructive" className="mt-1 ml-2">
-                                  Prescription Required
-                                </Badge>
-                              )}
                               {/* Star Rating */}
                               <div className="flex items-center mt-2" data-testid={`rating-${product.id}`}>
                                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />

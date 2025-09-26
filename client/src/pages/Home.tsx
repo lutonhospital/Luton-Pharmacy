@@ -666,8 +666,13 @@ export default function Home() {
                         )}
                       </div>
                       {product.requiresPrescription && (
-                        <Badge variant="outline" className="text-xs mb-2">
+                        <Badge variant="destructive" className="text-xs mb-2 bg-red-100 text-red-800 border-red-300">
                           Prescription Required
+                        </Badge>
+                      )}
+                      {product.category === "prescription_medicines" && (
+                        <Badge variant="outline" className="text-xs mb-2 bg-green-100 text-green-800 border-green-300">
+                          Prescription Medicine
                         </Badge>
                       )}
                     </div>
