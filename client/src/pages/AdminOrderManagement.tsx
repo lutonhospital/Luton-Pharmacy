@@ -29,7 +29,7 @@ import {
   Phone,
   Mail
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 interface OrderWithDetails {
   id: string;
@@ -79,7 +79,7 @@ interface OrderFilters {
 }
 
 export default function AdminOrderManagement() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isAdmin } = useAdminAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
@@ -95,7 +95,7 @@ export default function AdminOrderManagement() {
   // Fetch orders with filters
   const { data: orders, isLoading, refetch } = useQuery<OrderWithDetails[]>({
     queryKey: ["/api/admin/orders", filters],
-    enabled: user?.role === "admin" || user?.role === "pharmacist",
+    enabled: isAuthenticated && isAdmin,
   });
 
   // Update order status mutation
@@ -119,7 +119,7 @@ export default function AdminOrderManagement() {
   });
 
   // Redirect if not authorized
-  if (!user || (user.role !== "admin" && user.role !== "pharmacist")) {
+  if (!isAuthenticated || !isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="p-6 max-w-md">
@@ -127,10 +127,10 @@ export default function AdminOrderManagement() {
             <X className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
             <p className="text-gray-600 mb-4">
-              You need admin or pharmacist privileges to access order management.
+              You need admin privileges to access order management.
             </p>
-            <Link href="/">
-              <Button>Return to Homepage</Button>
+            <Link href="/admin/login">
+              <Button>Go to Admin Login</Button>
             </Link>
           </CardContent>
         </Card>

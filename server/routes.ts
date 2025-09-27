@@ -26,7 +26,7 @@ const isAdminAuthenticated = (req: any, res: any, next: any) => {
   }
 };
 import { z } from "zod";
-import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema, inventory, orders, prescriptions, users, consultations } from "@shared/schema";
+import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema, inventory, orders, prescriptions, users, consultations, passwordResetTokens } from "@shared/schema";
 
 // Admin user management validation schemas
 const createUserSchema = z.object({
@@ -419,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (req as any).session.adminUser = {
             id: 'admin',
             username: username,
-            role: 'admin',
+            role: 'super_admin',
             isAdmin: true,
             loginTime: new Date()
           };
@@ -429,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             user: {
               id: 'admin',
               username: username,
-              role: 'admin',
+              role: 'super_admin',
               firstName: 'Admin',
               lastName: 'User'
             }
@@ -450,6 +450,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verify password against database
+      if (!adminUser.password) {
+        console.log('Admin login failed: No password set for database user');
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
       const isValidPassword = await bcrypt.compare(password, adminUser.password);
       if (!isValidPassword) {
         console.log('Admin login failed: Invalid password for database user');
@@ -632,13 +637,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { email } = req.params;
         
         // Get the latest password reset token for this email
-        const [tokenRecord] = await db
-          .select()
-          .from(passwordResetTokens)
-          .where(eq(passwordResetTokens.email, email))
-          .orderBy(desc(passwordResetTokens.createdAt))
-          .limit(1);
-          
+        const tokenRecord = await storage.getPasswordResetToken(token);
+        
         if (!tokenRecord) {
           return res.status(404).json({ message: "No reset token found for this email" });
         }
@@ -1503,11 +1503,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Super Admin User Management Routes
   
   // Get all users (super admin only)
-  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/users", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== 'super_admin') {
+      const adminUser = req.adminUser;
+      if (!adminUser || adminUser.role !== 'super_admin') {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
@@ -1520,11 +1519,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new user (super admin only)
-  app.post("/api/admin/users", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/users", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== 'super_admin') {
+      const adminUser = req.adminUser;
+      if (!adminUser || adminUser.role !== 'super_admin') {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
@@ -1567,11 +1565,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user (super admin only)
-  app.patch("/api/admin/users/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/users/:id", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== 'super_admin') {
+      const adminUser = req.adminUser;
+      if (!adminUser || adminUser.role !== 'super_admin') {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
@@ -1613,18 +1610,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete user (super admin only)
-  app.delete("/api/admin/users/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/admin/users/:id", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== 'super_admin') {
+      const adminUser = req.adminUser;
+      if (!adminUser || adminUser.role !== 'super_admin') {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
       const { id } = req.params;
       
       // Prevent self-deletion
-      if (id === userId) {
+      if (id === adminUser.id) {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
 
@@ -1718,8 +1714,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requiresPrescription: false,
             currentStock: 50, // Default stock for imported products
             minimumStock: 10,
-            unitPrice: cleanPrice(price),
-            originalPrice: cleanPrice(price),
+            unitPrice: cleanPrice(price).toString(),
+            originalPrice: cleanPrice(price).toString(),
             supplier: 'Luton Hospital',
           };
 
