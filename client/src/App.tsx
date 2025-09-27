@@ -36,13 +36,13 @@ import Prescriptions from "@/pages/Prescriptions";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, isAdmin } = useAuth();
   
   // Check if user has admin access (admin, pharmacist, or super_admin)
-  const hasAdminAccess = isAuthenticated && user && user.role && ['admin', 'pharmacist', 'super_admin'].includes(user.role);
+  const hasAdminAccess = (isAuthenticated && user && user.role && ['admin', 'pharmacist', 'super_admin'].includes(user.role)) || isAdmin;
   
   // Check if user has super admin access
-  const isSuperAdmin = isAuthenticated && user && user.role === 'super_admin';
+  const isSuperAdmin = (isAuthenticated && user && user.role === 'super_admin') || isAdmin;
 
   return (
     <div className="min-h-screen flex flex-col">
