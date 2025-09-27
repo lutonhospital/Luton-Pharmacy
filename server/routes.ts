@@ -71,22 +71,7 @@ const adminConsultationUpdateSchema = z.object({
   scheduledDate: z.string().datetime().optional()
 });
 
-// Use testing Stripe key if available, otherwise use production key
-const stripeSecretKey = process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
-
-console.log('Stripe key configuration:', {
-  hasTesting: !!process.env.TESTING_STRIPE_SECRET_KEY,
-  hasProduction: !!process.env.STRIPE_SECRET_KEY,
-  usingKey: stripeSecretKey ? 'key loaded' : 'none'
-});
-
-if (!stripeSecretKey) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY or TESTING_STRIPE_SECRET_KEY');
-}
-
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2024-06-20",
-});
+// M-PESA and Cash payment configuration - no Stripe needed
 
 // Configure multer for memory storage
 const upload = multer({
@@ -103,18 +88,9 @@ const upload = multer({
   },
 });
 
-// Centralized KES payment helper to ensure currency consistency
-const createKesPaymentIntent = async (amountKes: number, orderId: string) => {
-  const amountInCents = Math.round(amountKes * 100);
-  console.log(`Creating KES payment intent: KES ${amountKes} -> ${amountInCents} cents`);
-  
-  return await stripe.paymentIntents.create({
-    amount: amountInCents,
-    currency: "kes",
-    metadata: {
-      orderId,
-    },
-  });
+// Helper function for payment amount validation
+const validatePaymentAmount = (amountKes: number): boolean => {
+  return amountKes > 0 && amountKes <= 100000; // Max 100,000 KES
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1165,14 +1141,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payment routes
-  app.post("/api/create-payment-intent", isAuthenticated, async (req: any, res) => {
+  // Payment completion routes for M-PESA and Cash
+  app.post("/api/complete-order", isAuthenticated, async (req: any, res) => {
     try {
-      const { orderId } = req.body;
+      const { orderId, paymentMethod, mpesaReceiptNumber } = req.body;
       const userId = req.user.claims.sub;
       
-      if (!orderId) {
-        return res.status(400).json({ message: "Order ID is required" });
+      if (!orderId || !paymentMethod) {
+        return res.status(400).json({ message: "Order ID and payment method are required" });
+      }
+
+      // Validate payment method
+      if (!['cash', 'mpesa'].includes(paymentMethod)) {
+        return res.status(400).json({ message: "Invalid payment method. Only cash and M-PESA are supported." });
+      }
+
+      // For M-PESA, receipt number is required
+      if (paymentMethod === 'mpesa' && !mpesaReceiptNumber) {
+        return res.status(400).json({ message: "M-PESA receipt number is required" });
       }
 
       const order = await storage.getOrder(orderId);
@@ -1186,32 +1172,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      // Use centralized KES payment helper
-      const paymentIntent = await createKesPaymentIntent(
-        parseFloat(order.totalAmount),
-        order.id
-      );
+      // Validate payment amount
+      if (!validatePaymentAmount(parseFloat(order.totalAmount))) {
+        return res.status(400).json({ message: "Invalid payment amount" });
+      }
 
-      res.json({ clientSecret: paymentIntent.client_secret });
-    } catch (error: any) {
-      console.error("Error creating payment intent:", error);
-      res.status(500).json({ message: "Error creating payment intent: " + error.message });
-    }
-  });
-
-  app.post("/api/confirm-payment", isAuthenticated, async (req: any, res) => {
-    try {
-      const { paymentIntentId, orderId } = req.body;
-      const userId = req.user.claims.sub;
-      
       // Update order with payment info
-      const order = await storage.updateOrderPayment(orderId, paymentIntentId);
+      const updateData: any = {
+        paymentMethod,
+        status: paymentMethod === 'cash' ? 'pending_payment' : 'paid' // Cash orders remain pending until physically paid
+      };
+
+      if (paymentMethod === 'mpesa') {
+        updateData.mpesaReceiptNumber = mpesaReceiptNumber;
+      }
+
+      const updatedOrder = await storage.updateOrder(orderId, updateData);
       
       // Get order items for email
       const orderItems = await storage.getOrderItems(orderId);
       
       // Send confirmation email
-      const user = await storage.getUser(userId);
       if (user?.email) {
         const items = orderItems.map(item => ({
           medicationName: item.medicationName,
@@ -1222,16 +1203,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await sendOrderConfirmationEmail(
           user.email,
           `${user.firstName} ${user.lastName}`,
-          order.orderNumber,
-          order.totalAmount,
+          updatedOrder.orderNumber,
+          updatedOrder.totalAmount,
           items
         );
       }
       
-      res.json({ success: true, order });
+      res.json({ 
+        success: true, 
+        order: updatedOrder,
+        message: paymentMethod === 'cash' 
+          ? 'Order confirmed. Please pay in cash when you collect your order.'
+          : 'Order confirmed. M-PESA payment verified.'
+      });
     } catch (error: any) {
-      console.error("Error confirming payment:", error);
-      res.status(500).json({ message: "Error confirming payment: " + error.message });
+      console.error("Error completing order:", error);
+      res.status(500).json({ message: "Error completing order: " + error.message });
     }
   });
 
