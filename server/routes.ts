@@ -1015,9 +1015,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/orders/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/orders/:id', isUserAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.sessionUser.id;
       const { id } = req.params;
       
       const order = await storage.getOrder(id);
@@ -1218,7 +1218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.mpesaReceiptNumber = mpesaReceiptNumber;
       }
 
-      const updatedOrder = await storage.updateOrder(orderId, updateData);
+      const updatedOrder = await storage.updateOrderWithPaymentInfo(orderId, paymentMethod, mpesaReceiptNumber);
       
       // Get order items for email
       const orderItems = await storage.getOrderItems(orderId);

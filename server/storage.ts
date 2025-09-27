@@ -71,6 +71,7 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrderStatus(id: string, status: string): Promise<Order>;
   updateOrderPayment(id: string, paymentIntentId: string): Promise<Order>;
+  updateOrderWithPaymentInfo(id: string, paymentMethod: string, mpesaReceiptNumber?: string): Promise<Order>;
   getPendingOrders(): Promise<Order[]>;
 
   // Order item operations
@@ -384,6 +385,25 @@ export class DatabaseStorage implements IStorage {
         status: "paid",
         updatedAt: new Date(),
       })
+      .where(eq(orders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+
+  async updateOrderWithPaymentInfo(id: string, paymentMethod: string, mpesaReceiptNumber?: string): Promise<Order> {
+    const updateData: any = {
+      paymentMethod,
+      status: paymentMethod === 'cash' ? 'pending_payment' : 'paid',
+      updatedAt: new Date(),
+    };
+
+    if (paymentMethod === 'mpesa' && mpesaReceiptNumber) {
+      updateData.mpesaReceiptNumber = mpesaReceiptNumber;
+    }
+
+    const [updatedOrder] = await db
+      .update(orders)
+      .set(updateData)
       .where(eq(orders.id, id))
       .returning();
     return updatedOrder;
