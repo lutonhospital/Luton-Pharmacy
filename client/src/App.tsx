@@ -22,6 +22,8 @@ import AdminOrderManagement from "@/pages/AdminOrderManagement";
 import AdminPrescriptionVerification from "@/pages/AdminPrescriptionVerification";
 import AdminLogin from "@/pages/AdminLogin";
 import Login from "@/pages/Login";
+import ResetPassword from "@/pages/ResetPassword";
+import AdminResetPassword from "@/pages/AdminResetPassword";
 import Signup from "@/pages/Signup";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
@@ -69,6 +71,10 @@ function Router() {
 
           {/* Admin login route - accessible without authentication */}
           <Route path="/admin/login" component={AdminLogin} />
+          
+          {/* Password reset routes - accessible without authentication */}
+          <Route path="/reset-password" component={ResetPassword} />
+          <Route path="/admin/reset-password" component={AdminResetPassword} />
 
           {/* Protected client routes - components handle authentication internally */}
           <Route path="/profile" component={Profile} />

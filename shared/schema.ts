@@ -220,6 +220,17 @@ export const shoppingCart = pgTable("shopping_cart", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Password reset tokens table
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull(),
+  token: varchar("token").notNull().unique(),
+  userType: varchar("user_type").notNull(), // "user" or "admin"
+  isUsed: boolean("is_used").default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Notifications table
 export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -347,6 +358,11 @@ export const insertShoppingCartSchema = createInsertSchema(shoppingCart).omit({
   updatedAt: true,
 });
 
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type AuthUpsertUser = z.infer<typeof authUpsertUserSchema>;
@@ -369,3 +385,5 @@ export type InsertPrescriptionUpload = z.infer<typeof insertPrescriptionUploadSc
 export type PrescriptionUpload = typeof prescriptionUploads.$inferSelect;
 export type InsertShoppingCart = z.infer<typeof insertShoppingCartSchema>;
 export type ShoppingCart = typeof shoppingCart.$inferSelect;
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

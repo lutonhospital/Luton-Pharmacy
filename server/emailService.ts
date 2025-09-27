@@ -132,3 +132,94 @@ export async function sendOrderConfirmationEmail(
     html,
   });
 }
+
+export async function sendPasswordResetEmail(
+  email: string,
+  name: string,
+  resetUrl: string
+): Promise<boolean> {
+  const subject = "Password Reset - Luton Hospital Pharmacy";
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #059669;">Luton Hospital Pharmacy</h2>
+      <p>Dear ${name},</p>
+      <p>We received a request to reset your password for your Luton Hospital Pharmacy account.</p>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+        <p style="margin-bottom: 20px;">Click the button below to reset your password:</p>
+        <a href="${resetUrl}" style="background-color: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+          Reset Password
+        </a>
+      </div>
+      
+      <p><strong>Important:</strong> This link will expire in 1 hour for security reasons.</p>
+      <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
+      <p>For security reasons, if you're having trouble with the button above, you can copy and paste this link into your browser:</p>
+      <p style="word-break: break-all; color: #6b7280;">${resetUrl}</p>
+      
+      <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+      <p style="font-size: 14px; color: #6b7280;">
+        If you have any questions, please contact our pharmacy at pharmacy@lutonhospital.nhs.uk or call 01582 491122.
+      </p>
+      <p style="font-size: 14px; color: #6b7280;">
+        Best regards,<br>Luton Hospital Pharmacy Team
+      </p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: email,
+    from: 'pharmacy@lutonhospital.nhs.uk',
+    subject,
+    html,
+  });
+}
+
+export async function sendAdminPasswordResetEmail(
+  email: string,
+  name: string,
+  resetUrl: string
+): Promise<boolean> {
+  const subject = "Admin Password Reset - Luton Hospital Pharmacy";
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #059669;">🔐 Luton Hospital Pharmacy - Admin Portal</h2>
+      <p>Dear ${name},</p>
+      <p>We received a request to reset your admin password for the Luton Hospital Pharmacy management system.</p>
+      
+      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; color: #92400e; font-weight: bold;">⚠️ Admin Access Reset Request</p>
+        <p style="margin: 10px 0 0 0; color: #92400e;">This is a security-sensitive operation for administrative access.</p>
+      </div>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+        <p style="margin-bottom: 20px;">Click the button below to reset your admin password:</p>
+        <a href="${resetUrl}" style="background-color: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+          Reset Admin Password
+        </a>
+      </div>
+      
+      <p><strong>Important:</strong> This link will expire in 1 hour for security reasons.</p>
+      <p><strong>Security Notice:</strong> If you didn't request this admin password reset, please contact the IT administrator immediately.</p>
+      <p>For security reasons, if you're having trouble with the button above, you can copy and paste this link into your browser:</p>
+      <p style="word-break: break-all; color: #6b7280;">${resetUrl}</p>
+      
+      <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+      <p style="font-size: 14px; color: #6b7280;">
+        For administrative support, contact IT at admin@lutonhospital.nhs.uk
+      </p>
+      <p style="font-size: 14px; color: #6b7280;">
+        Best regards,<br>Luton Hospital IT Security Team
+      </p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: email,
+    from: 'admin@lutonhospital.nhs.uk',
+    subject,
+    html,
+  });
+}

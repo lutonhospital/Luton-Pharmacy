@@ -9,6 +9,7 @@ import {
   consultations,
   prescriptionUploads,
   shoppingCart,
+  passwordResetTokens,
   type User,
   type UpsertUser,
   type AuthUpsertUser,
@@ -30,6 +31,8 @@ import {
   type InsertPrescriptionUpload,
   type ShoppingCart,
   type InsertShoppingCart,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, count, sql } from "drizzle-orm";
@@ -136,6 +139,13 @@ export interface IStorage {
   getAllPrescriptionUploadsWithPatientDetails(): Promise<any[]>;
   getAllConsultationsWithPatientDetails(): Promise<any[]>;
   updateConsultation(id: string, updates: Partial<InsertConsultation>): Promise<Consultation>;
+
+  // Password reset token operations
+  createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  markPasswordResetTokenUsed(token: string): Promise<void>;
+  cleanupExpiredTokens(): Promise<void>;
+  cleanupUserPasswordResetTokens(email: string, userType: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -999,6 +1009,62 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  // Password reset token operations
+  async createPasswordResetToken(tokenData: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    const [token] = await db
+      .insert(passwordResetTokens)
+      .values(tokenData)
+      .returning();
+    return token;
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    // Hash the provided token to compare with stored hash
+    const crypto = await import('crypto');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    console.log(`Looking up token - Raw token length: ${token.length}, Hashed token: ${tokenHash.substring(0, 16)}...`);
+    
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, tokenHash),
+        eq(passwordResetTokens.isUsed, false),
+        sql`expires_at > NOW()`
+      ));
+      
+    console.log(`Token lookup result: ${resetToken ? `Found token for ${resetToken.email}` : 'No token found'}`);
+    
+    return resetToken;
+  }
+
+  async markPasswordResetTokenUsed(token: string): Promise<void> {
+    // Hash the provided token to find the stored record
+    const crypto = await import('crypto');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    await db
+      .update(passwordResetTokens)
+      .set({ isUsed: true })
+      .where(eq(passwordResetTokens.token, tokenHash));
+  }
+
+  async cleanupExpiredTokens(): Promise<void> {
+    await db
+      .delete(passwordResetTokens)
+      .where(sql`expires_at < NOW()`);
+  }
+
+  async cleanupUserPasswordResetTokens(email: string, userType: string): Promise<void> {
+    await db
+      .delete(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.email, email),
+        eq(passwordResetTokens.userType, userType)
+      ));
   }
 }
 

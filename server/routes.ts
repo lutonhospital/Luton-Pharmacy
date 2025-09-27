@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import multer from "multer";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { sendPrescriptionStatusEmail, sendOrderConfirmationEmail } from "./emailService";
+import { sendPrescriptionStatusEmail, sendOrderConfirmationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail } from "./emailService";
 import { ObjectStorageService } from "./objectStorage";
 import Stripe from "stripe";
 import { z } from "zod";
@@ -253,6 +253,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/forgot-password', async (req, res) => {
     try {
+      // Clean up expired tokens for security and database hygiene
+      await storage.cleanupExpiredTokens();
+      
       const { email } = req.body;
 
       if (!email) {
@@ -260,29 +263,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user exists
-      const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const user = await storage.getUserByEmail(email);
       
       if (!user) {
         // Return success even if user doesn't exist (security best practice)
         return res.json({ message: "If an account with that email exists, a password reset link has been sent." });
       }
 
-      // For now, just return success message
-      // In a real implementation, you would:
-      // 1. Generate a secure password reset token
-      // 2. Store it with expiration time
-      // 3. Send reset email via SendGrid
+      // Generate secure reset token
+      const crypto = await import('crypto');
+      const resetToken = crypto.randomBytes(32).toString('hex');
       
-      console.log(`Password reset requested for: ${email}`);
+      // Hash the token before storing (security: store only hash, not plaintext)
+      const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+      
+      // Token expires in 1 hour
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+      // Clean up any existing tokens for this email and user type
+      await storage.cleanupUserPasswordResetTokens(email, 'user');
+
+      // Store hashed token in database
+      await storage.createPasswordResetToken({
+        email,
+        token: tokenHash,
+        userType: 'user',
+        expiresAt,
+      });
+
+      // Send password reset email with secure URL construction
+      const baseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:5000';
+      const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+      
+      const emailSent = await sendPasswordResetEmail(email, user.firstName || 'User', resetUrl);
+      
+      if (emailSent) {
+        console.log(`Password reset email sent to: ${email}`);
+      } else {
+        console.log(`Password reset email failed to send to: ${email}`);
+      }
+      
+      // Development-only: Log raw token for testing (never do this in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`DEV: Password reset token for ${email}: ${resetToken}`);
+      }
       
       res.json({ 
-        message: "If an account with that email exists, a password reset link has been sent.",
-        // For development only - remove in production
-        devNote: "Password reset functionality is available. In production, this would send an email with reset instructions."
+        message: "If an account with that email exists, a password reset link has been sent."
       });
     } catch (error) {
       console.error("Forgot password error:", error);
       res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+
+  // Handle password reset (consume token)
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      console.log(`Reset password attempt - Token length: ${token?.length}, Password provided: ${!!password}`);
+
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+
+      // Validate and get reset token
+      const resetToken = await storage.getPasswordResetToken(token);
+      
+      console.log(`Reset token lookup result: ${resetToken ? 'Found' : 'Not found'}`);
+      
+      if (!resetToken || resetToken.userType !== 'user') {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Find the user by email
+      const user = await storage.getUserByEmail(resetToken.email);
+      
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Update user password
+      await storage.updateUser(user.id, { password: hashedPassword });
+
+      // Mark token as used
+      await storage.markPasswordResetTokenUsed(token);
+
+      res.json({ message: "Password reset successful" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 
@@ -303,21 +381,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password are required" });
       }
 
-      // Use simple admin credentials to ensure access
-      const validUsername = "admin";
-      const validPassword = "luton123";
+      // First try to find admin user in database
+      let adminUser = await storage.getUserByEmail(username);
       
-      // Check credentials
-      if (username !== validUsername || password !== validPassword) {
-        console.log('Admin login failed: Invalid credentials provided');
+      // Development-only hardcoded admin fallback (NEVER in production)
+      if (!adminUser && username === "admin" && process.env.NODE_ENV === 'development') {
+        // Check hardcoded credentials as development fallback only
+        const validPassword = "luton123";
+        if (password === validPassword) {
+          console.log('WARNING: Using hardcoded admin credentials (development only)');
+          // Create session for hardcoded admin
+          (req as any).session.adminUser = {
+            id: 'admin',
+            username: username,
+            role: 'admin',
+            isAdmin: true,
+            loginTime: new Date()
+          };
+
+          return res.json({ 
+            message: "Login successful",
+            user: {
+              id: 'admin',
+              username: username,
+              role: 'admin',
+              firstName: 'Admin',
+              lastName: 'User'
+            }
+          });
+        }
+      }
+      
+      // If no database user found, login fails
+      if (!adminUser) {
+        console.log('Admin login failed: Admin user not found');
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      // Check if user has admin role (only admin and super_admin get full access)
+      if (!['admin', 'super_admin'].includes(adminUser.role || '')) {
+        console.log('Admin login failed: User is not an admin');
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      // Verify password against database
+      const isValidPassword = await bcrypt.compare(password, adminUser.password);
+      if (!isValidPassword) {
+        console.log('Admin login failed: Invalid password for database user');
         return res.status(401).json({ message: "Invalid username or password" });
       }
 
-      // Create admin session
+      // Create admin session for database user
       (req as any).session.adminUser = {
-        id: 'admin',
-        username: username,
-        role: 'admin',
+        id: adminUser.id,
+        username: adminUser.email,
+        role: adminUser.role,
         isAdmin: true,
         loginTime: new Date()
       };
@@ -325,11 +443,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         message: "Login successful",
         user: {
-          id: 'admin',
-          username: username,
-          role: 'admin',
-          firstName: 'Admin',
-          lastName: 'User'
+          id: adminUser.id,
+          username: adminUser.email,
+          role: adminUser.role,
+          firstName: adminUser.firstName || 'Admin',
+          lastName: adminUser.lastName || 'User'
         }
       });
     } catch (error) {
@@ -373,27 +491,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/forgot-password', async (req, res) => {
     try {
+      // Clean up expired tokens for security and database hygiene
+      await storage.cleanupExpiredTokens();
+      
       const { email } = req.body;
 
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
       }
 
-      // For admin forgot password, we could check against a list of authorized admin emails
-      // or use the same user database. For now, just return success for any email.
+      // Check if admin user exists with admin role
+      const user = await storage.getUserByEmail(email);
       
-      console.log(`Admin password reset requested for: ${email}`);
+      if (!user || !['admin', 'super_admin'].includes(user.role || '')) {
+        // Return success even if admin doesn't exist (security best practice)
+        return res.json({ message: "If an admin account with that email exists, a password reset link has been sent." });
+      }
+
+      // Generate secure reset token
+      const crypto = await import('crypto');
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      
+      // Hash the token before storing (security: store only hash, not plaintext)
+      const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+      
+      // Token expires in 1 hour
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+      // Clean up any existing tokens for this email and user type
+      await storage.cleanupUserPasswordResetTokens(email, 'admin');
+
+      // Store hashed token in database
+      await storage.createPasswordResetToken({
+        email,
+        token: tokenHash,
+        userType: 'admin',
+        expiresAt,
+      });
+
+      // Send admin password reset email with secure URL construction
+      const baseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:5000';
+      const resetUrl = `${baseUrl}/admin/reset-password?token=${resetToken}`;
+      
+      const emailSent = await sendAdminPasswordResetEmail(email, user.firstName || 'Admin', resetUrl);
+      
+      if (emailSent) {
+        console.log(`Admin password reset email sent to: ${email}`);
+      } else {
+        console.log(`Admin password reset email failed to send to: ${email}`);
+      }
+      
+      // Development-only: Log raw token for testing (never do this in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`DEV: Admin password reset token for ${email}: ${resetToken}`);
+      }
       
       res.json({ 
-        message: "If an admin account with that email exists, a password reset link has been sent.",
-        // For development only - remove in production
-        devNote: "Admin password reset functionality is available. In production, this would send an email with reset instructions to authorized admin accounts."
+        message: "If an admin account with that email exists, a password reset link has been sent."
       });
     } catch (error) {
       console.error("Admin forgot password error:", error);
       res.status(500).json({ message: "Failed to process admin password reset request" });
     }
   });
+
+  // Handle admin password reset (consume token)
+  app.post('/api/admin/reset-password', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Admin password must be at least 8 characters long" });
+      }
+
+      // Validate and get reset token
+      const resetToken = await storage.getPasswordResetToken(token);
+      
+      if (!resetToken || resetToken.userType !== 'admin') {
+        return res.status(400).json({ message: "Invalid or expired admin reset token" });
+      }
+
+      // Find the admin user by email
+      const user = await storage.getUserByEmail(resetToken.email);
+      
+      if (!user || !['admin', 'super_admin'].includes(user.role || '')) {
+        return res.status(400).json({ message: "Admin user not found" });
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Update admin password
+      await storage.updateUser(user.id, { password: hashedPassword });
+
+      // Mark token as used
+      await storage.markPasswordResetTokenUsed(token);
+
+      console.log(`Admin password reset completed for: ${resetToken.email}`);
+
+      res.json({ message: "Admin password reset successful" });
+    } catch (error) {
+      console.error("Admin reset password error:", error);
+      res.status(500).json({ message: "Failed to reset admin password" });
+    }
+  });
+
+  // Development-only endpoint to get raw token for testing
+  if (process.env.NODE_ENV === 'development') {
+    app.get('/api/dev/password-reset-token/:email', async (req, res) => {
+      try {
+        const { email } = req.params;
+        
+        // Get the latest password reset token for this email
+        const [tokenRecord] = await db
+          .select()
+          .from(passwordResetTokens)
+          .where(eq(passwordResetTokens.email, email))
+          .orderBy(desc(passwordResetTokens.createdAt))
+          .limit(1);
+          
+        if (!tokenRecord) {
+          return res.status(404).json({ message: "No reset token found for this email" });
+        }
+        
+        // In development, we need to provide a way to test the actual flow
+        // Since the stored token is hashed, we can't reverse it
+        // But we can create a test token that matches the stored hash
+        res.json({ 
+          message: "Token found but hashed in database",
+          tokenId: tokenRecord.id,
+          email: tokenRecord.email,
+          userType: tokenRecord.userType,
+          expiresAt: tokenRecord.expiresAt,
+          note: "In production, raw token would be sent via email"
+        });
+      } catch (error) {
+        console.error("Dev token lookup error:", error);
+        res.status(500).json({ message: "Failed to lookup token" });
+      }
+    });
+  }
 
   // Admin dashboard stats
   app.get('/api/admin/stats', async (req, res) => {
