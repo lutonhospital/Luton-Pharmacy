@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2, CreditCard } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2, CreditCard, Smartphone } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -92,7 +92,7 @@ export default function Cart() {
       const orderData = {
         totalAmount: (displayTotal + 200).toFixed(2), // Subtotal + delivery fee
         deliveryMethod: "delivery", // Default to delivery
-        paymentMethod: "card", // Default to card payment
+        paymentMethod: "mpesa", // Default to M-PESA payment (user can change on payment page)
       };
       const response = await apiRequest("POST", "/api/orders", orderData);
       return response.json();
@@ -310,9 +310,9 @@ export default function Cart() {
                       disabled={createOrderMutation.isPending}
                       data-testid="button-checkout"
                     >
-                      <CreditCard className="h-4 w-4 mr-2" />
+                      <Smartphone className="h-4 w-4 mr-2" />
                       {createOrderMutation.isPending ? 'Creating Order...' : 
-                       isAuthenticated ? 'Proceed to Checkout' : 
+                       isAuthenticated ? 'Proceed to Payment' : 
                        'Login to Checkout'}
                     </Button>
                   </CardContent>
