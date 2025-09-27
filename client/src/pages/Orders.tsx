@@ -147,7 +147,7 @@ export default function Orders() {
                     <div className="lg:col-span-2">
                       <h4 className="font-medium text-gray-900 mb-3">Order Items</h4>
                       <div className="space-y-3">
-                        {order.items.map((item) => (
+                        {(order.items || []).map((item) => (
                           <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                             <div className="h-12 w-12 bg-white rounded-lg flex items-center justify-center">
                               <Package className="h-6 w-6 text-gray-400" />
