@@ -371,6 +371,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/admin/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // For admin forgot password, we could check against a list of authorized admin emails
+      // or use the same user database. For now, just return success for any email.
+      
+      console.log(`Admin password reset requested for: ${email}`);
+      
+      res.json({ 
+        message: "If an admin account with that email exists, a password reset link has been sent.",
+        // For development only - remove in production
+        devNote: "Admin password reset functionality is available. In production, this would send an email with reset instructions to authorized admin accounts."
+      });
+    } catch (error) {
+      console.error("Admin forgot password error:", error);
+      res.status(500).json({ message: "Failed to process admin password reset request" });
+    }
+  });
+
   // Admin dashboard stats
   app.get('/api/admin/stats', async (req, res) => {
     try {
