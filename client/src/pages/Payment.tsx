@@ -1,58 +1,61 @@
+import { useState } from "react";
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Smartphone, Banknote } from "lucide-react";
 
-// Use testing Stripe public key if available, otherwise use production key
-const stripePublicKey = import.meta.env.VITE_TESTING_STRIPE_PUBLIC_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+type PaymentMethod = 'mpesa' | 'cash';
 
-if (!stripePublicKey) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY or VITE_TESTING_STRIPE_PUBLIC_KEY');
+interface Order {
+  id: string;
+  orderNumber: string;
+  totalAmount: string;
+  status: string;
 }
-const stripePromise = loadStripe(stripePublicKey);
 
-const CheckoutForm = ({ orderId }: { orderId: string }) => {
-  const stripe = useStripe();
-  const elements = useElements();
+const PaymentForm = ({ order }: { order: Order }) => {
   const { toast } = useToast();
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mpesa');
+  const [mpesaReceiptNumber, setMpesaReceiptNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const confirmPaymentMutation = useMutation({
-    mutationFn: async (data: { paymentIntentId: string; orderId: string }) => {
-      const response = await apiRequest("POST", "/api/confirm-payment", data);
+  const completeOrderMutation = useMutation({
+    mutationFn: async (data: { orderId: string; paymentMethod: PaymentMethod; mpesaReceiptNumber?: string }) => {
+      const response = await apiRequest("POST", "/api/complete-order", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Payment Successful",
-        description: "Your order has been confirmed and is being processed.",
+        title: "Order Confirmed",
+        description: data.message || "Your order has been confirmed successfully.",
       });
       setTimeout(() => {
-        window.location.href = "/";
+        window.location.href = "/orders";
       }, 2000);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          description: "You are logged out. Please login again.",
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/login";
         }, 500);
         return;
       }
       toast({
-        title: "Payment Error",
-        description: "There was an error processing your payment. Please try again.",
+        title: "Error",
+        description: error.message || "Failed to complete order. Please try again.",
         variant: "destructive",
       });
     },
@@ -61,37 +64,31 @@ const CheckoutForm = ({ orderId }: { orderId: string }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!stripe || !elements || isProcessing) return;
+    if (isProcessing) return;
+
+    // Validate M-PESA receipt number if M-PESA is selected
+    if (paymentMethod === 'mpesa' && !mpesaReceiptNumber.trim()) {
+      toast({
+        title: "Missing Receipt Number",
+        description: "Please enter your M-PESA receipt number.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsProcessing(true);
 
     try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin,
-        },
-        redirect: "if_required",
-      });
+      const paymentData: any = {
+        orderId: order.id,
+        paymentMethod,
+      };
 
-      if (error) {
-        toast({
-          title: "Payment Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        confirmPaymentMutation.mutate({
-          paymentIntentId: paymentIntent.id,
-          orderId,
-        });
+      if (paymentMethod === 'mpesa') {
+        paymentData.mpesaReceiptNumber = mpesaReceiptNumber.trim();
       }
-    } catch (error) {
-      toast({
-        title: "Payment Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+
+      completeOrderMutation.mutate(paymentData);
     } finally {
       setIsProcessing(false);
     }
@@ -99,14 +96,91 @@ const CheckoutForm = ({ orderId }: { orderId: string }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
+      {/* Payment Method Selection */}
+      <div className="space-y-4">
+        <h3 className="font-medium text-foreground">Choose Payment Method</h3>
+        <RadioGroup 
+          value={paymentMethod} 
+          onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+          className="space-y-3"
+        >
+          {/* M-PESA Option */}
+          <div className="flex items-center space-x-3 border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors">
+            <RadioGroupItem value="mpesa" id="mpesa" />
+            <Label htmlFor="mpesa" className="flex items-center space-x-3 cursor-pointer flex-1">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <Smartphone className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h4 className="font-medium">M-PESA</h4>
+                <p className="text-sm text-gray-500">Pay with M-PESA mobile money</p>
+              </div>
+            </Label>
+          </div>
+
+          {/* Cash Option */}
+          <div className="flex items-center space-x-3 border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors">
+            <RadioGroupItem value="cash" id="cash" />
+            <Label htmlFor="cash" className="flex items-center space-x-3 cursor-pointer flex-1">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Banknote className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h4 className="font-medium">Cash on Collection</h4>
+                <p className="text-sm text-gray-500">Pay when you collect your order</p>
+              </div>
+            </Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {/* M-PESA Receipt Number Input */}
+      {paymentMethod === 'mpesa' && (
+        <div className="space-y-2">
+          <Label htmlFor="mpesa-receipt">M-PESA Receipt Number</Label>
+          <Input
+            id="mpesa-receipt"
+            type="text"
+            placeholder="Enter M-PESA receipt number (e.g., QGK2X3Y4Z5)"
+            value={mpesaReceiptNumber}
+            onChange={(e) => setMpesaReceiptNumber(e.target.value)}
+            data-testid="input-mpesa-receipt"
+          />
+          <p className="text-sm text-gray-500">
+            You'll receive this after completing your M-PESA payment
+          </p>
+        </div>
+      )}
+
+      {/* Payment Instructions */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="font-medium text-blue-900 mb-2">Payment Instructions</h4>
+        {paymentMethod === 'mpesa' ? (
+          <div className="text-sm text-blue-800 space-y-1">
+            <p>1. Go to M-PESA on your phone</p>
+            <p>2. Select "Lipa na M-PESA"</p>
+            <p>3. Select "Buy Goods and Services"</p>
+            <p>4. Enter Luton Hospital Till Number: <span className="font-bold">5555555</span></p>
+            <p>5. Enter amount: <span className="font-bold">KES {order.totalAmount}</span></p>
+            <p>6. Enter your PIN and confirm</p>
+            <p>7. Copy the receipt number and enter it above</p>
+          </div>
+        ) : (
+          <div className="text-sm text-blue-800">
+            <p>You will pay in cash when you collect your order from Luton Hospital Pharmacy.</p>
+            <p>Please bring the exact amount: <span className="font-bold">KES {order.totalAmount}</span></p>
+          </div>
+        )}
+      </div>
+
       <Button 
         type="submit" 
-        disabled={!stripe || isProcessing}
+        disabled={isProcessing || (paymentMethod === 'mpesa' && !mpesaReceiptNumber.trim())}
         className="w-full"
-        data-testid="button-submit-payment"
+        data-testid="button-complete-order"
       >
-        {isProcessing ? "Processing..." : "Pay Now"}
+        {isProcessing ? "Processing..." : 
+         paymentMethod === 'mpesa' ? "Confirm M-PESA Payment" : "Confirm Cash Order"}
       </Button>
     </form>
   );
@@ -117,56 +191,24 @@ export default function Payment() {
   const orderId = params.orderId as string;
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
-  const [clientSecret, setClientSecret] = useState("");
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
+  // Redirect if not authenticated
+  if (!isLoading && !isAuthenticated) {
+    toast({
+      title: "Unauthorized",
+      description: "Please login to complete your payment.",
+      variant: "destructive",
+    });
+    setTimeout(() => {
+      window.location.href = "/login";
+    }, 500);
+    return null;
+  }
 
   const { data: order, isLoading: orderLoading } = useQuery({
     queryKey: [`/api/orders/${orderId}`],
     enabled: !!orderId && isAuthenticated,
   });
-
-  useEffect(() => {
-    if (order && !clientSecret) {
-      apiRequest("POST", "/api/create-payment-intent", { 
-        orderId: (order as any).id 
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setClientSecret(data.clientSecret);
-        })
-        .catch((error) => {
-          if (isUnauthorizedError(error)) {
-            toast({
-              title: "Unauthorized",
-              description: "You are logged out. Logging in again...",
-              variant: "destructive",
-            });
-            setTimeout(() => {
-              window.location.href = "/api/login";
-            }, 500);
-            return;
-          }
-          toast({
-            title: "Error",
-            description: "Failed to initialize payment. Please try again.",
-            variant: "destructive",
-          });
-        });
-    }
-  }, [order, clientSecret, toast]);
 
   if (isLoading || orderLoading) {
     return (
@@ -195,14 +237,6 @@ export default function Payment() {
     );
   }
 
-  if (!clientSecret) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background py-12">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -211,6 +245,7 @@ export default function Payment() {
             <CardTitle>Complete Your Payment</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Order Summary */}
             <div className="bg-muted rounded-lg p-4">
               <h3 className="font-medium text-foreground mb-2">Order Summary</h3>
               <div className="flex justify-between items-center">
@@ -219,49 +254,7 @@ export default function Payment() {
               </div>
             </div>
 
-            {/* Payment Method Selection */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-foreground">Choose Payment Method</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* M-Pesa Option */}
-                <div className="border border-gray-200 rounded-lg p-4 hover:border-primary cursor-pointer transition-colors">
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                      <span className="text-green-600 font-bold text-lg">M</span>
-                    </div>
-                    <h4 className="font-medium">M-Pesa</h4>
-                    <p className="text-sm text-gray-500">Pay with M-Pesa mobile money</p>
-                  </div>
-                </div>
-
-                {/* Cash Option */}
-                <div className="border border-gray-200 rounded-lg p-4 hover:border-primary cursor-pointer transition-colors">
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-bold text-lg">₵</span>
-                    </div>
-                    <h4 className="font-medium">Cash on Delivery</h4>
-                    <p className="text-sm text-gray-500">Pay when you receive your order</p>
-                  </div>
-                </div>
-
-                {/* Card Option */}
-                <div className="border border-gray-200 rounded-lg p-4 hover:border-primary cursor-pointer transition-colors">
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 font-bold text-lg">💳</span>
-                    </div>
-                    <h4 className="font-medium">Debit/Credit Card</h4>
-                    <p className="text-sm text-gray-500">Pay securely with your card</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Stripe Payment Form - shown by default for now */}
-            <Elements stripe={stripePromise} options={{ clientSecret }}>
-              <CheckoutForm orderId={orderId} />
-            </Elements>
+            <PaymentForm order={order as Order} />
           </CardContent>
         </Card>
       </div>
