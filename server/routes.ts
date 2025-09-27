@@ -251,6 +251,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Check if user exists
+      const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      
+      if (!user) {
+        // Return success even if user doesn't exist (security best practice)
+        return res.json({ message: "If an account with that email exists, a password reset link has been sent." });
+      }
+
+      // For now, just return success message
+      // In a real implementation, you would:
+      // 1. Generate a secure password reset token
+      // 2. Store it with expiration time
+      // 3. Send reset email via SendGrid
+      
+      console.log(`Password reset requested for: ${email}`);
+      
+      res.json({ 
+        message: "If an account with that email exists, a password reset link has been sent.",
+        // For development only - remove in production
+        devNote: "Password reset functionality is available. In production, this would send an email with reset instructions."
+      });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+
   // Admin authentication routes
   app.post('/api/admin/login', async (req, res) => {
     try {

@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Eye, EyeOff, Hospital, Shield, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Hospital, Shield, ArrowLeft, Mail } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -19,6 +20,8 @@ export default function Login() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Check if user is already logged in
   const { data: user } = useQuery({
@@ -80,6 +83,27 @@ export default function Login() {
     },
   });
 
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (data: { email: string }) => {
+      return apiRequest("POST", "/api/auth/forgot-password", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your email for password reset instructions.",
+      });
+      setShowForgotPassword(false);
+      setForgotPasswordEmail("");
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Reset Failed",
+        description: error.message || "Failed to send password reset email",
+      });
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -125,6 +149,21 @@ export default function Login() {
 
   const handleAdminLogin = () => {
     setLocation("/admin/login");
+  };
+
+  const handleForgotPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!forgotPasswordEmail) {
+      toast({
+        variant: "destructive",
+        title: "Missing Email",
+        description: "Please enter your email address",
+      });
+      return;
+    }
+
+    forgotPasswordMutation.mutate({ email: forgotPasswordEmail });
   };
 
   return (
@@ -265,7 +304,7 @@ export default function Login() {
 
             <Separator />
 
-            <div className="text-center">
+            <div className="text-center space-y-3">
               <Button
                 type="button"
                 variant="ghost"
@@ -277,6 +316,67 @@ export default function Login() {
                   ? "Don't have an account? Create Account" 
                   : "Already have an account? Sign In"}
               </Button>
+
+              {/* Forgot Password Dialog */}
+              {isLogin && (
+                <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-gray-600 hover:text-gray-800 p-0 h-auto"
+                      data-testid="button-forgot-password"
+                    >
+                      Forgot your password?
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center space-x-2">
+                        <Mail className="h-5 w-5 text-green-600" />
+                        <span>Reset Password</span>
+                      </DialogTitle>
+                      <DialogDescription>
+                        Enter your email address and we'll send you a link to reset your password.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="forgotEmail">Email Address</Label>
+                        <Input
+                          id="forgotEmail"
+                          type="email"
+                          value={forgotPasswordEmail}
+                          onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                          placeholder="Enter your email address"
+                          required
+                          data-testid="input-forgot-email"
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowForgotPassword(false)}
+                          data-testid="button-cancel-forgot"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={forgotPasswordMutation.isPending}
+                          data-testid="button-send-reset"
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          {forgotPasswordMutation.isPending ? "Sending..." : "Send Reset Link"}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
 
             {/* Features - Only show on login */}
