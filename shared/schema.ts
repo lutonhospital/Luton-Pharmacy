@@ -52,8 +52,7 @@ export const orderStatusEnum = pgEnum("order_status", [
 // Payment method enum
 export const paymentMethodEnum = pgEnum("payment_method", [
   "cash",
-  "mpesa", 
-  "card"
+  "mpesa"
 ]);
 
 // Users table
