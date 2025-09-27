@@ -112,8 +112,8 @@ const PaymentForm = ({ order }: { order: Order }) => {
                 <Smartphone className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <h4 className="font-medium">M-PESA</h4>
-                <p className="text-sm text-gray-500">Pay with M-PESA mobile money</p>
+                <h4 className="font-medium">M-PESA (Recommended)</h4>
+                <p className="text-sm text-gray-500">Pay instantly with M-PESA - Till: 9604725</p>
               </div>
             </Label>
           </div>
@@ -126,7 +126,7 @@ const PaymentForm = ({ order }: { order: Order }) => {
                 <Banknote className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <h4 className="font-medium">Cash on Collection</h4>
+                <h4 className="font-medium">Cash on Delivery</h4>
                 <p className="text-sm text-gray-500">Pay when you collect your order</p>
               </div>
             </Label>
@@ -160,7 +160,7 @@ const PaymentForm = ({ order }: { order: Order }) => {
             <p>1. Go to M-PESA on your phone</p>
             <p>2. Select "Lipa na M-PESA"</p>
             <p>3. Select "Buy Goods and Services"</p>
-            <p>4. Enter Luton Hospital Till Number: <span className="font-bold">5555555</span></p>
+            <p>4. Enter Luton Hospital Till Number: <span className="font-bold">9604725</span></p>
             <p>5. Enter amount: <span className="font-bold">KES {order.totalAmount}</span></p>
             <p>6. Enter your PIN and confirm</p>
             <p>7. Copy the receipt number and enter it above</p>
