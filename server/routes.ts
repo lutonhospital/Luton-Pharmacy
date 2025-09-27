@@ -1428,13 +1428,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Image upload route for admin
-  app.post("/api/admin/upload-image", isAuthenticated, upload.single('image'), async (req: any, res) => {
+  app.post("/api/admin/upload-image", isAdminAuthenticated, upload.single('image'), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
-        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
-      }
 
       if (!req.file) {
         return res.status(400).json({ message: "No image file provided" });
@@ -1734,14 +1729,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin-specific routes for dashboard functionality
-  app.get("/api/admin/stats", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/stats", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
-        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
-      }
 
       // Use Promise.all for better performance
       const [
