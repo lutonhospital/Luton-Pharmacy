@@ -93,6 +93,37 @@ const validatePaymentAmount = (amountKes: number): boolean => {
   return amountKes > 0 && amountKes <= 100000; // Max 100,000 KES
 };
 
+// Unified authentication middleware for both session and OIDC
+const isUserAuthenticated = async (req: any, res: any, next: any) => {
+  try {
+    // Check if user is authenticated via session first
+    if (req.session && req.session.userId) {
+      const user = await storage.getUser(req.session.userId);
+      if (user) {
+        // Attach user to request for session-based authentication
+        req.sessionUser = user;
+        return next();
+      }
+    }
+    
+    // Check if user is authenticated via OIDC (fallback for existing sessions)
+    if (req.user && req.user.claims && req.user.claims.sub) {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (user) {
+        // Attach user to request for OIDC authentication
+        req.sessionUser = user;
+        return next();
+      }
+    }
+    
+    return res.status(401).json({ message: "Unauthorized" });
+  } catch (error) {
+    console.error("User authentication middleware error:", error);
+    res.status(500).json({ message: "Authentication check failed" });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -965,9 +996,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Order routes
-  app.get('/api/orders', isAuthenticated, async (req: any, res) => {
+  app.get('/api/orders', isUserAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.sessionUser.id;
       const user = await storage.getUser(userId);
       
       let orders;
@@ -1008,9 +1039,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/orders', isAuthenticated, async (req: any, res) => {
+  app.post('/api/orders', isUserAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.sessionUser.id;
       const orderData = { ...req.body, patientId: userId };
       
       const validatedOrder = insertOrderSchema.parse(orderData);
@@ -1142,10 +1173,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Payment completion routes for M-PESA and Cash
-  app.post("/api/complete-order", isAuthenticated, async (req: any, res) => {
+  app.post("/api/complete-order", isUserAuthenticated, async (req: any, res) => {
     try {
       const { orderId, paymentMethod, mpesaReceiptNumber } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.sessionUser.id;
       
       if (!orderId || !paymentMethod) {
         return res.status(400).json({ message: "Order ID and payment method are required" });
@@ -1300,9 +1331,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Shopping cart routes
-  app.get("/api/cart", isAuthenticated, async (req: any, res) => {
+  app.get("/api/cart", isUserAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.sessionUser.id;
       const cartItems = await storage.getUserCart(userId);
       
       // Fetch product details for each cart item
@@ -1321,9 +1352,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/cart", isAuthenticated, async (req: any, res) => {
+  app.post("/api/cart", isUserAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.sessionUser.id;
       const { inventoryId, quantity } = req.body;
 
       const cartItem = await storage.addToCart({
@@ -1339,7 +1370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/cart/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/cart/:id", isUserAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { quantity } = req.body;
@@ -1352,7 +1383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/cart/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/cart/:id", isUserAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.removeFromCart(id);
