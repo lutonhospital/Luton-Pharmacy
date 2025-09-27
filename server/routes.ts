@@ -7,6 +7,24 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendPrescriptionStatusEmail, sendOrderConfirmationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail } from "./emailService";
 import { ObjectStorageService } from "./objectStorage";
 import Stripe from "stripe";
+
+// Admin authentication middleware for session-based authentication
+const isAdminAuthenticated = (req: any, res: any, next: any) => {
+  try {
+    const adminUser = req.session?.adminUser;
+    
+    if (!adminUser || !adminUser.isAdmin) {
+      return res.status(401).json({ message: "Admin authentication required" });
+    }
+    
+    // Attach admin user to request for use in route handlers
+    req.adminUser = adminUser;
+    next();
+  } catch (error) {
+    console.error("Admin authentication middleware error:", error);
+    res.status(500).json({ message: "Authentication check failed" });
+  }
+};
 import { z } from "zod";
 import { insertPrescriptionSchema, insertOrderSchema, insertAddressSchema, insertInventorySchema, insertPrescriptionUploadSchema, insertConsultationSchema, inventory, orders, prescriptions, users, consultations } from "@shared/schema";
 
@@ -1359,14 +1377,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin product management routes
-  app.get("/api/admin/products", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/products", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
-        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
-      }
-
       const products = await storage.getAllInventory();
       res.json(products);
     } catch (error) {
@@ -1375,65 +1387,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/products", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/products", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
-        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
-      }
-
-      try {
-        const validatedData = insertInventorySchema.parse(req.body);
-        const product = await storage.createInventoryItem(validatedData);
-        res.json(product);
-      } catch (error: any) {
-        if (error.name === 'ZodError') {
-          return res.status(400).json({ message: "Validation error", errors: error.errors });
-        }
-        throw error;
-      }
+      const validatedData = insertInventorySchema.parse(req.body);
+      const product = await storage.createInventoryItem(validatedData);
       res.json(product);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
       console.error("Error creating product:", error);
       res.status(500).json({ message: "Failed to create product" });
     }
   });
 
-  app.patch("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/products/:id", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
-        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
-      }
-
       const { id } = req.params;
-      try {
-        const validatedData = insertInventorySchema.partial().parse(req.body);
-        const product = await storage.updateInventoryItem(id, validatedData);
-        res.json(product);
-      } catch (error: any) {
-        if (error.name === 'ZodError') {
-          return res.status(400).json({ message: "Validation error", errors: error.errors });
-        }
-        throw error;
-      }
+      const validatedData = insertInventorySchema.partial().parse(req.body);
+      const product = await storage.updateInventoryItem(id, validatedData);
       res.json(product);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
       console.error("Error updating product:", error);
       res.status(500).json({ message: "Failed to update product" });
     }
   });
 
-  app.delete("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/admin/products/:id", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
-        return res.status(403).json({ message: "Access denied. Admin or pharmacist role required." });
-      }
-
       const { id } = req.params;
       await storage.deleteInventoryItem(id);
       res.json({ success: true });
@@ -1640,14 +1624,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CSV Import endpoint for pharmaceutical products
-  app.post("/api/admin/import-products", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/import-products", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== 'admin') {
-        return res.status(403).json({ message: "Access denied. Admin role required." });
-      }
-
       const { csvData } = req.body;
       if (!csvData || !Array.isArray(csvData)) {
         return res.status(400).json({ message: "Invalid CSV data format" });
