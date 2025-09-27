@@ -225,7 +225,7 @@ export default function AdminDashboard() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <Link href="/admin/orders">
                   <Button variant="outline" className="w-full justify-start" data-testid="link-manage-orders">
                     <ShoppingCart className="mr-2 h-4 w-4" />
@@ -248,6 +248,12 @@ export default function AdminDashboard() {
                   <Button variant="outline" className="w-full justify-start" data-testid="link-consultations">
                     <Users className="mr-2 h-4 w-4" />
                     Consultations
+                  </Button>
+                </Link>
+                <Link href="/admin/import">
+                  <Button variant="outline" className="w-full justify-start" data-testid="link-import-products">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Import Products
                   </Button>
                 </Link>
               </div>

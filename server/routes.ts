@@ -1695,15 +1695,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process each row
       for (const row of csvData) {
         try {
-          const extrenalId = row['Extrenal ID'] || row['External_ID'] || row['External ID'];
+          const extrenalId = row[' Extrenal ID'] || row['Extrenal ID'] || row['External_ID'] || row['External ID'];
           const productName = row['Product_Name'] || row['Product Name'];
           const price = row['Price'];
           const image = row['Image'];
-          const description = row['Description'];
+          const description = row['Description'] || '';
           const collection = row['Collection'] || row['SuperCollection'];
 
-          // Skip if essential fields are missing
-          if (!productName || !price) {
+          // Skip if essential fields are missing or price is 0
+          if (!productName || !price || cleanPrice(price) === 0) {
             results.skipped++;
             continue;
           }
@@ -1711,12 +1711,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const inventoryItem = {
             medicationName: productName.trim(),
             dosage: extractDosage(productName),
-            description: description?.trim() || '',
+            description: description?.trim() || `${productName.trim()} - Quality pharmaceutical product from Luton Hospital`,
             category: mapCategory(collection),
             imageUrl: image || 'https://i.postimg.cc/s24h1HsW/pharma-1.png',
             isActive: true,
             requiresPrescription: false,
-            currentStock: 100, // Default stock
+            currentStock: 50, // Default stock for imported products
             minimumStock: 10,
             unitPrice: cleanPrice(price),
             originalPrice: cleanPrice(price),
